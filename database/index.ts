@@ -1,0 +1,20 @@
+// Re-export everything from webStorage (works on all platforms including web)
+export {
+    initDatabase,
+    getDatabase,
+    resetDatabase,
+    getAllTransactions,
+    getTransactionsByDateRange,
+    getTransactionsByMonth,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    getAllCategories,
+    getCategoriesByType,
+    addCategory,
+    getAllAccounts,
+    addAccount,
+    deleteAccount,
+    updateAccountBalance,
+    getMonthlyStats,
+} from './webStorage';
