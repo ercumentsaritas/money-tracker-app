@@ -56,3 +56,45 @@ export interface TransactionInput {
   is_recurring?: boolean;
   recurring_id?: string | null;
 }
+
+export interface RecurringTransaction {
+  id: string;
+  name: string;
+  amount: number;
+  type: TransactionType;
+  category_id: string;
+  account_id: string;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  day_of_month?: number; // 1-31, only for monthly/yearly frequency
+  next_date: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface RecurringTransactionInput {
+  name: string;
+  amount: number;
+  type: TransactionType;
+  category_id: string;
+  account_id: string;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  day_of_month?: number; // 1-31, only for monthly/yearly frequency
+  next_date: string;
+}
+
+export interface Goal {
+  id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  deadline: string; // ISO date
+  monthly_target: number;
+  created_at: string;
+  is_active: boolean;
+}
+
+export interface GoalInput {
+  name: string;
+  target_amount: number;
+  deadline: string;
+}

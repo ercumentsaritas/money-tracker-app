@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     StyleSheet,
     View,
@@ -8,16 +8,20 @@ import {
     TextInput,
     ScrollView,
     Dimensions,
+    Keyboard,
+    TouchableWithoutFeedback,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { Colors } from '@/constants/Colors';
-import { updateAccountBalance, getAllAccounts, initDatabase, addTransaction, getAllCategories } from '@/database';
+import { updateAccountBalance, getAllAccounts, initDatabase, addRecurringTransaction, getAllCategories } from '@/database';
 
 const { width } = Dimensions.get('window');
 
-type Step = 'theme' | 'balance' | 'income' | 'extraIncome' | 'expenses' | 'tour';
+type Step = 'theme' | 'balance' | 'income' | 'incomeDay' | 'extraIncome' | 'expenses' | 'expensesDays' | 'tour';
 
 const TOUR_STEPS = [
     {
@@ -64,9 +68,32 @@ export default function OnboardingScreen() {
     const [kitchenExpense, setKitchenExpense] = useState('');
     const [otherExpense, setOtherExpense] = useState('');
 
+    // Day of month selections for recurring transactions
+    const [mainIncomeDay, setMainIncomeDay] = useState(1);
+    const [rentDay, setRentDay] = useState(1);
+    const [billsDay, setBillsDay] = useState(1);
+
     const [tourIndex, setTourIndex] = useState(0);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
     const colors = Colors[selectedTheme];
+
+    // Track keyboard visibility
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            () => setIsKeyboardVisible(true)
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => setIsKeyboardVisible(false)
+        );
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
 
     const handleNext = async () => {
         if (currentStep === 'theme') {
@@ -75,10 +102,25 @@ export default function OnboardingScreen() {
         } else if (currentStep === 'balance') {
             setCurrentStep('income');
         } else if (currentStep === 'income') {
+            // Only go to incomeDay if main income is entered
+            if (mainIncome && parseFloat(mainIncome) > 0) {
+                setCurrentStep('incomeDay');
+            } else {
+                setCurrentStep('extraIncome');
+            }
+        } else if (currentStep === 'incomeDay') {
             setCurrentStep('extraIncome');
         } else if (currentStep === 'extraIncome') {
             setCurrentStep('expenses');
         } else if (currentStep === 'expenses') {
+            // Only go to expensesDays if rent or bills are entered
+            if ((rentExpense && parseFloat(rentExpense) > 0) || (billExpense && parseFloat(billExpense) > 0)) {
+                setCurrentStep('expensesDays');
+            } else {
+                await saveData();
+                setCurrentStep('tour');
+            }
+        } else if (currentStep === 'expensesDays') {
             await saveData();
             setCurrentStep('tour');
         } else if (currentStep === 'tour') {
@@ -92,78 +134,120 @@ export default function OnboardingScreen() {
     };
 
     const saveData = async () => {
-        await initDatabase();
-        const accounts = await getAllAccounts();
-        const cashAccount = accounts.find(a => a.name.toLowerCase().includes('nakit')) || accounts[0];
-        const categories = await getAllCategories();
+        console.log('[Onboarding] saveData called');
+        console.log('[Onboarding] balance:', balance, 'mainIncome:', mainIncome, 'rentExpense:', rentExpense, 'billExpense:', billExpense);
 
-        if (!cashAccount) return;
+        try {
+            await initDatabase();
+            const accounts = await getAllAccounts();
+            console.log('[Onboarding] accounts:', accounts);
+            const cashAccount = accounts.find(a => a.name.toLowerCase().includes('nakit')) || accounts[0];
 
-        // 1. Update Balance
-        if (balance) {
-            const initialBalance = parseFloat(balance.replace(/[^0-9.-]/g, '')) || 0;
-            await updateAccountBalance(cashAccount.id, initialBalance);
-        }
-
-        // 2. Add Income Transactions
-        const today = new Date().toISOString();
-
-        if (mainIncome) {
-            const amount = parseFloat(mainIncome.replace(/[^0-9.-]/g, '')) || 0;
-            if (amount > 0) {
-                await addTransaction({
-                    amount,
-                    type: 'income',
-                    categoryId: 'cat-salary', // Default ID for Salary
-                    accountId: cashAccount.id,
-                    date: today,
-                    note: 'Aylık Ana Gelir (Başlangıç)'
-                });
+            if (!cashAccount) {
+                console.log('[Onboarding] No cash account found!');
+                return;
             }
-        }
+            console.log('[Onboarding] Using account:', cashAccount);
 
-        if (extraIncome) {
-            const amount = parseFloat(extraIncome.replace(/[^0-9.-]/g, '')) || 0;
-            if (amount > 0) {
-                await addTransaction({
-                    amount,
-                    type: 'income',
-                    categoryId: 'cat-other-in', // Default ID for Other Income
-                    accountId: cashAccount.id,
-                    date: today,
-                    note: 'Ek Gelir (Başlangıç)'
-                });
+            // 1. Update Balance (only the initial balance, not affected by recurring)
+            if (balance) {
+                const initialBalance = parseFloat(balance.replace(/[^0-9.-]/g, '')) || 0;
+                console.log('[Onboarding] Setting balance to:', initialBalance);
+                await updateAccountBalance(cashAccount.id, initialBalance);
             }
-        }
 
-        // 3. Add Expense Transactions
-        const addExpense = async (val: string, catId: string, note: string) => {
-            const amount = parseFloat(val.replace(/[^0-9.-]/g, '')) || 0;
-            if (amount > 0) {
-                await addTransaction({
-                    amount,
-                    type: 'expense',
-                    categoryId: catId,
-                    accountId: cashAccount.id,
-                    date: today,
-                    note
-                });
+            // Helper to calculate next occurrence date
+            const getNextDate = (dayOfMonth: number) => {
+                const now = new Date();
+                let nextDate = new Date(now.getFullYear(), now.getMonth(), dayOfMonth);
+                if (nextDate <= now) {
+                    nextDate.setMonth(nextDate.getMonth() + 1);
+                }
+                return nextDate.toISOString();
+            };
+
+            // 2. Add Recurring Income - Main Income
+            if (mainIncome) {
+                const amount = parseFloat(mainIncome.replace(/[^0-9.-]/g, '')) || 0;
+                if (amount > 0) {
+                    console.log('[Onboarding] Adding recurring income:', amount, 'day:', mainIncomeDay);
+                    await addRecurringTransaction({
+                        name: 'Aylık Maaş',
+                        amount,
+                        type: 'income',
+                        category_id: 'cat-salary',
+                        account_id: cashAccount.id,
+                        frequency: 'monthly',
+                        day_of_month: mainIncomeDay,
+                        next_date: getNextDate(mainIncomeDay),
+                    });
+                }
             }
-        };
 
-        await addExpense(rentExpense, 'cat-rent', 'Kira Gideri (Başlangıç)');
-        await addExpense(billExpense, 'cat-bills', 'Fatura Giderleri (Başlangıç)');
-        await addExpense(kitchenExpense, 'cat-food', 'Mutfak Giderleri (Başlangıç)');
-        await addExpense(otherExpense, 'cat-other-out', 'Diğer Giderler (Başlangıç)');
+            // 3. Add Recurring Expenses - Rent
+            if (rentExpense) {
+                const amount = parseFloat(rentExpense.replace(/[^0-9.-]/g, '')) || 0;
+                if (amount > 0) {
+                    console.log('[Onboarding] Adding recurring rent:', amount, 'day:', rentDay);
+                    await addRecurringTransaction({
+                        name: 'Kira',
+                        amount,
+                        type: 'expense',
+                        category_id: 'cat-rent',
+                        account_id: cashAccount.id,
+                        frequency: 'monthly',
+                        day_of_month: rentDay,
+                        next_date: getNextDate(rentDay),
+                    });
+                }
+            }
+
+            // 4. Add Recurring Expenses - Bills
+            if (billExpense) {
+                const amount = parseFloat(billExpense.replace(/[^0-9.-]/g, '')) || 0;
+                if (amount > 0) {
+                    console.log('[Onboarding] Adding recurring bills:', amount, 'day:', billsDay);
+                    await addRecurringTransaction({
+                        name: 'Faturalar',
+                        amount,
+                        type: 'expense',
+                        category_id: 'cat-bills',
+                        account_id: cashAccount.id,
+                        frequency: 'monthly',
+                        day_of_month: billsDay,
+                        next_date: getNextDate(billsDay),
+                    });
+                }
+            }
+
+            console.log('[Onboarding] saveData completed successfully');
+        } catch (error) {
+            console.error('[Onboarding] saveData error:', error);
+        }
+        // Note: extraIncome, kitchenExpense, otherExpense are not recurring - they're variable
     };
 
     const handleBack = () => {
         if (currentStep === 'balance') setCurrentStep('theme');
         else if (currentStep === 'income') setCurrentStep('balance');
-        else if (currentStep === 'extraIncome') setCurrentStep('income');
+        else if (currentStep === 'incomeDay') setCurrentStep('income');
+        else if (currentStep === 'extraIncome') {
+            if (mainIncome && parseFloat(mainIncome) > 0) {
+                setCurrentStep('incomeDay');
+            } else {
+                setCurrentStep('income');
+            }
+        }
         else if (currentStep === 'expenses') setCurrentStep('extraIncome');
+        else if (currentStep === 'expensesDays') setCurrentStep('expenses');
         else if (currentStep === 'tour' && tourIndex > 0) setTourIndex(tourIndex - 1);
-        else if (currentStep === 'tour' && tourIndex === 0) setCurrentStep('expenses');
+        else if (currentStep === 'tour' && tourIndex === 0) {
+            if ((rentExpense && parseFloat(rentExpense) > 0) || (billExpense && parseFloat(billExpense) > 0)) {
+                setCurrentStep('expensesDays');
+            } else {
+                setCurrentStep('expenses');
+            }
+        }
     };
 
     const handleSkip = () => {
@@ -172,7 +256,7 @@ export default function OnboardingScreen() {
     };
 
     const renderStepIndicator = () => {
-        const steps = ['theme', 'balance', 'income', 'extraIncome', 'expenses', 'tour'];
+        const steps = ['theme', 'balance', 'income', 'incomeDay', 'extraIncome', 'expenses', 'expensesDays', 'tour'];
         const currentIndex = steps.indexOf(currentStep);
         return (
             <View style={styles.stepIndicator}>
@@ -290,6 +374,54 @@ export default function OnboardingScreen() {
         </View>
     );
 
+    const renderIncomeDayStep = () => (
+        <View style={styles.stepContent}>
+            <Ionicons name="calendar-outline" size={60} color={colors.income} />
+            <Text style={[styles.stepTitle, { color: colors.text }]}>Maaş Günü</Text>
+            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                Maaşınız ayın hangi günü yatıyor?
+            </Text>
+
+            <View style={styles.dayPickerContainer}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.dayPickerScroll}
+                >
+                    {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                        <TouchableOpacity
+                            key={day}
+                            style={[
+                                styles.dayButton,
+                                {
+                                    backgroundColor: mainIncomeDay === day ? colors.income : colors.surface,
+                                    borderColor: mainIncomeDay === day ? colors.income : colors.border,
+                                },
+                            ]}
+                            onPress={() => setMainIncomeDay(day)}
+                        >
+                            <Text
+                                style={[
+                                    styles.dayButtonText,
+                                    { color: mainIncomeDay === day ? '#FFFFFF' : colors.text },
+                                ]}
+                            >
+                                {day}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
+            <View style={[styles.infoBox, { backgroundColor: colors.income + '15' }]}>
+                <Ionicons name="information-circle" size={20} color={colors.income} />
+                <Text style={[styles.infoText, { color: colors.income }]}>
+                    Her ayın {mainIncomeDay}. günü maaşınız otomatik olarak işlenecek
+                </Text>
+            </View>
+        </View>
+    );
+
     const renderExtraIncomeStep = () => (
         <View style={styles.stepContent}>
             <Ionicons name="trending-up-outline" size={60} color={colors.income} />
@@ -372,6 +504,93 @@ export default function OnboardingScreen() {
         </ScrollView>
     );
 
+    const renderExpensesDaysStep = () => (
+        <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.stepContent}>
+                <Ionicons name="calendar-outline" size={60} color={colors.expense} />
+                <Text style={[styles.stepTitle, { color: colors.text }]}>Ödeme Günleri</Text>
+                <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                    Kira ve faturalarınız ayın hangi günü ödeniyor?
+                </Text>
+
+                {rentExpense && parseFloat(rentExpense) > 0 && (
+                    <View style={styles.daySection}>
+                        <Text style={[styles.daySectionTitle, { color: colors.text }]}>🏠 Kira</Text>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.dayPickerScroll}
+                        >
+                            {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                                <TouchableOpacity
+                                    key={day}
+                                    style={[
+                                        styles.dayButton,
+                                        {
+                                            backgroundColor: rentDay === day ? colors.expense : colors.surface,
+                                            borderColor: rentDay === day ? colors.expense : colors.border,
+                                        },
+                                    ]}
+                                    onPress={() => setRentDay(day)}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.dayButtonText,
+                                            { color: rentDay === day ? '#FFFFFF' : colors.text },
+                                        ]}
+                                    >
+                                        {day}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {billExpense && parseFloat(billExpense) > 0 && (
+                    <View style={styles.daySection}>
+                        <Text style={[styles.daySectionTitle, { color: colors.text }]}>💡 Faturalar</Text>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.dayPickerScroll}
+                        >
+                            {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                                <TouchableOpacity
+                                    key={day}
+                                    style={[
+                                        styles.dayButton,
+                                        {
+                                            backgroundColor: billsDay === day ? colors.expense : colors.surface,
+                                            borderColor: billsDay === day ? colors.expense : colors.border,
+                                        },
+                                    ]}
+                                    onPress={() => setBillsDay(day)}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.dayButtonText,
+                                            { color: billsDay === day ? '#FFFFFF' : colors.text },
+                                        ]}
+                                    >
+                                        {day}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
+                <View style={[styles.infoBox, { backgroundColor: colors.expense + '15' }]}>
+                    <Ionicons name="information-circle" size={20} color={colors.expense} />
+                    <Text style={[styles.infoText, { color: colors.expense }]}>
+                        Bu giderler tekrarlayan işlem olarak kaydedilecek
+                    </Text>
+                </View>
+            </View>
+        </ScrollView>
+    );
+
     const renderTourStep = () => {
         const step = TOUR_STEPS[tourIndex];
         return (
@@ -399,48 +618,66 @@ export default function OnboardingScreen() {
         );
     };
 
+    const dismissKeyboard = () => {
+        Keyboard.dismiss();
+    };
+
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            {renderStepIndicator()}
-
-            <View style={styles.contentContainer}>
-                {currentStep === 'theme' && renderThemeStep()}
-                {currentStep === 'balance' && renderBalanceStep()}
-                {currentStep === 'income' && renderIncomeStep()}
-                {currentStep === 'extraIncome' && renderExtraIncomeStep()}
-                {currentStep === 'expenses' && renderExpensesStep()}
-                {currentStep === 'tour' && renderTourStep()}
-            </View>
-
-            <View style={styles.footer}>
-                {currentStep !== 'theme' && (
-                    <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={handleBack}>
-                        <Ionicons name="arrow-back" size={20} color={colors.text} />
-                    </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                    style={[styles.nextButton, { backgroundColor: colors.tint, flex: currentStep === 'theme' ? 1 : undefined }]}
-                    onPress={handleNext}
+        <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+                <KeyboardAvoidingView
+                    style={styles.keyboardAvoid}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
-                    <Text style={styles.nextText}>
-                        {currentStep === 'tour' && tourIndex === TOUR_STEPS.length - 1 ? 'Başla' : 'Devam'}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
+                    {renderStepIndicator()}
 
-            {currentStep !== 'theme' && (
-                <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-                    <Text style={[styles.skipText, { color: colors.textSecondary }]}>Atla</Text>
-                </TouchableOpacity>
-            )}
-        </SafeAreaView>
+                    <View style={styles.contentContainer}>
+                        {currentStep === 'theme' && renderThemeStep()}
+                        {currentStep === 'balance' && renderBalanceStep()}
+                        {currentStep === 'income' && renderIncomeStep()}
+                        {currentStep === 'incomeDay' && renderIncomeDayStep()}
+                        {currentStep === 'extraIncome' && renderExtraIncomeStep()}
+                        {currentStep === 'expenses' && renderExpensesStep()}
+                        {currentStep === 'expensesDays' && renderExpensesDaysStep()}
+                        {currentStep === 'tour' && renderTourStep()}
+                    </View>
+
+                    {!isKeyboardVisible && (
+                        <View style={styles.footer}>
+                            {currentStep !== 'theme' && (
+                                <TouchableOpacity style={[styles.skipButton, { borderColor: colors.border }]} onPress={handleSkip}>
+                                    <Text style={[styles.skipText, { color: colors.textSecondary }]}>Atla</Text>
+                                </TouchableOpacity>
+                            )}
+
+                            {currentStep !== 'theme' && (
+                                <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={handleBack}>
+                                    <Ionicons name="arrow-back" size={20} color={colors.text} />
+                                </TouchableOpacity>
+                            )}
+
+                            <TouchableOpacity
+                                style={[styles.nextButton, { backgroundColor: colors.tint }]}
+                                onPress={handleNext}
+                            >
+                                <Text style={styles.nextText}>
+                                    {currentStep === 'tour' && tourIndex === TOUR_STEPS.length - 1 ? 'Başla' : 'Devam'}
+                                </Text>
+                                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </TouchableWithoutFeedback>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
+    },
+    keyboardAvoid: {
         flex: 1,
     },
     stepIndicator: {
@@ -534,6 +771,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 24,
         paddingVertical: 16,
+        paddingBottom: 32,
         gap: 12,
     },
     backButton: {
@@ -559,10 +797,57 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     skipButton: {
+        height: 50,
+        paddingHorizontal: 16,
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingBottom: 24,
     },
     skipText: {
         fontSize: 14,
+        fontWeight: '500',
+    },
+    // Day picker styles
+    dayPickerContainer: {
+        width: '100%',
+        marginTop: 24,
+    },
+    dayPickerScroll: {
+        paddingHorizontal: 8,
+        gap: 8,
+    },
+    dayButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dayButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    daySection: {
+        width: '100%',
+        marginTop: 24,
+    },
+    daySectionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 12,
+    },
+    infoBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        padding: 14,
+        borderRadius: 12,
+        marginTop: 24,
+        width: '100%',
+    },
+    infoText: {
+        flex: 1,
+        fontSize: 13,
+        lineHeight: 18,
     },
 });

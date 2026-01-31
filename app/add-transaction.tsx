@@ -10,7 +10,10 @@ import {
     Platform,
     Alert,
     Modal,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -79,206 +82,213 @@ export default function AddTransactionScreen() {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={[styles.container, { backgroundColor: colors.background }]}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="close" size={28} color={colors.text} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Yeni İşlem</Text>
-                <TouchableOpacity onPress={handleSave}>
-                    <Text style={[styles.saveButton, { color: colors.tint }]}>Kaydet</Text>
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-                {/* Type selector */}
-                <View style={styles.typeRow}>
-                    <TouchableOpacity
-                        style={[
-                            styles.typeButton,
-                            {
-                                backgroundColor: type === 'expense' ? colors.expense : colors.surface,
-                                borderColor: type === 'expense' ? colors.expense : colors.border,
-                            },
-                        ]}
-                        onPress={() => setType('expense')}
-                    >
-                        <Ionicons
-                            name="arrow-up"
-                            size={20}
-                            color={type === 'expense' ? '#FFF' : colors.text}
-                        />
-                        <Text style={[styles.typeText, { color: type === 'expense' ? '#FFF' : colors.text }]}>
-                            Gider
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[
-                            styles.typeButton,
-                            {
-                                backgroundColor: type === 'income' ? colors.income : colors.surface,
-                                borderColor: type === 'income' ? colors.income : colors.border,
-                            },
-                        ]}
-                        onPress={() => setType('income')}
-                    >
-                        <Ionicons
-                            name="arrow-down"
-                            size={20}
-                            color={type === 'income' ? '#FFF' : colors.text}
-                        />
-                        <Text style={[styles.typeText, { color: type === 'income' ? '#FFF' : colors.text }]}>
-                            Gelir
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Amount input */}
-                <View style={styles.amountContainer}>
-                    <Text style={[styles.currencySymbol, { color: type === 'income' ? colors.income : colors.expense }]}>
-                        ₺
-                    </Text>
-                    <TextInput
-                        style={[styles.amountInput, { color: colors.text }]}
-                        value={amount}
-                        onChangeText={setAmount}
-                        placeholder="0"
-                        placeholderTextColor={colors.textSecondary}
-                        keyboardType="decimal-pad"
-                        autoFocus
-                    />
-                </View>
-
-                {/* Description input */}
-                <View style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Açıklama</Text>
-                    <TextInput
-                        style={[styles.textInput, { color: colors.text }]}
-                        value={description}
-                        onChangeText={setDescription}
-                        placeholder="İşlem açıklaması (isteğe bağlı)"
-                        placeholderTextColor={colors.textSecondary}
-                    />
-                </View>
-
-                {/* Date input */}
-                <View style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Tarih</Text>
-                    <TouchableOpacity
-                        style={styles.dateButton}
-                        onPress={() => setShowDatePicker(true)}
-                    >
-                        <Ionicons name="calendar-outline" size={18} color={colors.tint} />
-                        <Text style={[styles.dateText, { color: colors.text }]}>
-                            {new Date(date).toLocaleDateString('tr-TR', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric'
-                            })}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Calendar Picker */}
-                <CalendarPicker
-                    visible={showDatePicker}
-                    selectedDate={date}
-                    onDateSelect={setDate}
-                    onClose={() => setShowDatePicker(false)}
-                />
-
-                {/* Category selector */}
-                <View style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Kategori</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-                        {categories.map((cat) => (
-                            <TouchableOpacity
-                                key={cat.id}
-                                style={[
-                                    styles.categoryChip,
-                                    {
-                                        backgroundColor: selectedCategory?.id === cat.id ? cat.color + '20' : 'transparent',
-                                        borderColor: selectedCategory?.id === cat.id ? cat.color : colors.border,
-                                    },
-                                ]}
-                                onPress={() => setSelectedCategory(cat)}
-                            >
-                                <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
-                                <Text
-                                    style={[
-                                        styles.categoryText,
-                                        { color: selectedCategory?.id === cat.id ? cat.color : colors.text },
-                                    ]}
-                                >
-                                    {cat.name}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                        {/* Add Category Button */}
-                        <TouchableOpacity
-                            style={[
-                                styles.categoryChip,
-                                styles.addCategoryChip,
-                                { borderColor: colors.tint, borderStyle: 'dashed' },
-                            ]}
-                            onPress={() => setShowCategoryModal(true)}
-                        >
-                            <Ionicons name="add" size={16} color={colors.tint} />
-                            <Text style={[styles.categoryText, { color: colors.tint }]}>Yeni</Text>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <KeyboardAvoidingView
+                    style={styles.keyboardView}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <TouchableOpacity onPress={() => router.back()}>
+                            <Ionicons name="close" size={28} color={colors.text} />
                         </TouchableOpacity>
-                    </ScrollView>
-                </View>
+                        <Text style={[styles.headerTitle, { color: colors.text }]}>Yeni İşlem</Text>
+                        <TouchableOpacity onPress={handleSave}>
+                            <Text style={[styles.saveButton, { color: colors.tint }]}>Kaydet</Text>
+                        </TouchableOpacity>
+                    </View>
 
-                {/* Account selector */}
-                <View style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Hesap</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-                        {accounts.map((acc) => (
+                    <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+                        {/* Type selector */}
+                        <View style={styles.typeRow}>
                             <TouchableOpacity
-                                key={acc.id}
                                 style={[
-                                    styles.categoryChip,
+                                    styles.typeButton,
                                     {
-                                        backgroundColor: selectedAccount?.id === acc.id ? colors.tint + '20' : 'transparent',
-                                        borderColor: selectedAccount?.id === acc.id ? colors.tint : colors.border,
+                                        backgroundColor: type === 'expense' ? colors.expense : colors.surface,
+                                        borderColor: type === 'expense' ? colors.expense : colors.border,
                                     },
                                 ]}
-                                onPress={() => setSelectedAccount(acc)}
+                                onPress={() => setType('expense')}
                             >
                                 <Ionicons
-                                    name="wallet-outline"
-                                    size={16}
-                                    color={selectedAccount?.id === acc.id ? colors.tint : colors.text}
+                                    name="arrow-up"
+                                    size={20}
+                                    color={type === 'expense' ? '#FFF' : colors.text}
                                 />
-                                <Text
-                                    style={[
-                                        styles.categoryText,
-                                        { color: selectedAccount?.id === acc.id ? colors.tint : colors.text },
-                                    ]}
-                                >
-                                    {acc.name}
+                                <Text style={[styles.typeText, { color: type === 'expense' ? '#FFF' : colors.text }]}>
+                                    Gider
                                 </Text>
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            </ScrollView>
+                            <TouchableOpacity
+                                style={[
+                                    styles.typeButton,
+                                    {
+                                        backgroundColor: type === 'income' ? colors.income : colors.surface,
+                                        borderColor: type === 'income' ? colors.income : colors.border,
+                                    },
+                                ]}
+                                onPress={() => setType('income')}
+                            >
+                                <Ionicons
+                                    name="arrow-down"
+                                    size={20}
+                                    color={type === 'income' ? '#FFF' : colors.text}
+                                />
+                                <Text style={[styles.typeText, { color: type === 'income' ? '#FFF' : colors.text }]}>
+                                    Gelir
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
 
-            <AddCategoryModal
-                visible={showCategoryModal}
-                onClose={() => setShowCategoryModal(false)}
-                onCategoryAdded={loadData}
-                type={type}
-            />
-        </KeyboardAvoidingView>
+                        {/* Amount input */}
+                        <View style={styles.amountContainer}>
+                            <Text style={[styles.currencySymbol, { color: type === 'income' ? colors.income : colors.expense }]}>
+                                ₺
+                            </Text>
+                            <TextInput
+                                style={[styles.amountInput, { color: colors.text }]}
+                                value={amount}
+                                onChangeText={setAmount}
+                                placeholder="0"
+                                placeholderTextColor={colors.textSecondary}
+                                keyboardType="decimal-pad"
+                                autoFocus
+                            />
+                        </View>
+
+                        {/* Description input */}
+                        <View style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Açıklama</Text>
+                            <TextInput
+                                style={[styles.textInput, { color: colors.text }]}
+                                value={description}
+                                onChangeText={setDescription}
+                                placeholder="İşlem açıklaması (isteğe bağlı)"
+                                placeholderTextColor={colors.textSecondary}
+                            />
+                        </View>
+
+                        {/* Date input */}
+                        <View style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Tarih</Text>
+                            <TouchableOpacity
+                                style={styles.dateButton}
+                                onPress={() => setShowDatePicker(true)}
+                            >
+                                <Ionicons name="calendar-outline" size={18} color={colors.tint} />
+                                <Text style={[styles.dateText, { color: colors.text }]}>
+                                    {new Date(date).toLocaleDateString('tr-TR', {
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric'
+                                    })}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Calendar Picker */}
+                        <CalendarPicker
+                            visible={showDatePicker}
+                            selectedDate={date}
+                            onDateSelect={setDate}
+                            onClose={() => setShowDatePicker(false)}
+                        />
+
+                        {/* Category selector */}
+                        <View style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Kategori</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                                {categories.map((cat) => (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        style={[
+                                            styles.categoryChip,
+                                            {
+                                                backgroundColor: selectedCategory?.id === cat.id ? cat.color + '20' : 'transparent',
+                                                borderColor: selectedCategory?.id === cat.id ? cat.color : colors.border,
+                                            },
+                                        ]}
+                                        onPress={() => setSelectedCategory(cat)}
+                                    >
+                                        <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                                        <Text
+                                            style={[
+                                                styles.categoryText,
+                                                { color: selectedCategory?.id === cat.id ? cat.color : colors.text },
+                                            ]}
+                                        >
+                                            {cat.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                                {/* Add Category Button */}
+                                <TouchableOpacity
+                                    style={[
+                                        styles.categoryChip,
+                                        styles.addCategoryChip,
+                                        { borderColor: colors.tint, borderStyle: 'dashed' },
+                                    ]}
+                                    onPress={() => setShowCategoryModal(true)}
+                                >
+                                    <Ionicons name="add" size={16} color={colors.tint} />
+                                    <Text style={[styles.categoryText, { color: colors.tint }]}>Yeni</Text>
+                                </TouchableOpacity>
+                            </ScrollView>
+                        </View>
+
+                        {/* Account selector */}
+                        <View style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Hesap</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                                {accounts.map((acc) => (
+                                    <TouchableOpacity
+                                        key={acc.id}
+                                        style={[
+                                            styles.categoryChip,
+                                            {
+                                                backgroundColor: selectedAccount?.id === acc.id ? colors.tint + '20' : 'transparent',
+                                                borderColor: selectedAccount?.id === acc.id ? colors.tint : colors.border,
+                                            },
+                                        ]}
+                                        onPress={() => setSelectedAccount(acc)}
+                                    >
+                                        <Ionicons
+                                            name="wallet-outline"
+                                            size={16}
+                                            color={selectedAccount?.id === acc.id ? colors.tint : colors.text}
+                                        />
+                                        <Text
+                                            style={[
+                                                styles.categoryText,
+                                                { color: selectedAccount?.id === acc.id ? colors.tint : colors.text },
+                                            ]}
+                                        >
+                                            {acc.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    </ScrollView>
+
+                    <AddCategoryModal
+                        visible={showCategoryModal}
+                        onClose={() => setShowCategoryModal(false)}
+                        onCategoryAdded={loadData}
+                        type={type}
+                    />
+                </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
+    },
+    keyboardView: {
         flex: 1,
     },
     header: {

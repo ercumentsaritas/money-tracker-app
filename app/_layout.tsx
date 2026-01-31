@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import AuthScreen from './auth';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -50,13 +51,22 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const { actualTheme, isOnboarded } = useTheme();
+  const { actualTheme, isOnboarded, isPinEnabled, isAuthenticated } = useTheme();
 
   useEffect(() => {
     if (!isOnboarded) {
       router.replace('/onboarding');
     }
   }, [isOnboarded]);
+
+  // Show auth screen if PIN is enabled but user is not authenticated
+  if (isPinEnabled && !isAuthenticated && isOnboarded) {
+    return (
+      <NavigationThemeProvider value={actualTheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AuthScreen />
+      </NavigationThemeProvider>
+    );
+  }
 
   return (
     <NavigationThemeProvider value={actualTheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -67,10 +77,10 @@ function RootLayoutNav() {
         <Stack.Screen name="categories" options={{ headerShown: false }} />
         <Stack.Screen name="recurring" options={{ headerShown: false }} />
         <Stack.Screen name="dev" options={{ headerShown: false }} />
+        <Stack.Screen name="account-detail" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </NavigationThemeProvider>
   );
 }
-

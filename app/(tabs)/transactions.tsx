@@ -116,6 +116,7 @@ export default function TransactionsScreen() {
             <FlatList
                 data={sections}
                 keyExtractor={(item) => item.date}
+                keyboardShouldPersistTaps="handled"
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} />
                 }

@@ -7,6 +7,7 @@ import {
     ScrollView,
     Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -50,16 +51,27 @@ export default function DevScreen() {
     const colors = Colors[colorScheme ?? 'light'];
     const { resetOnboarding, setTheme } = useTheme();
 
-    const handleFullReset = async () => {
-        const confirmed = typeof window !== 'undefined' && window.confirm
-            ? window.confirm('Uygulama tamamen sıfırlanacak. İlk açılış ekranına döneceksiniz. Emin misiniz?')
-            : true;
-
-        if (confirmed) {
-            await resetDatabase();
-            resetOnboarding();
-            router.replace('/onboarding');
-        }
+    const handleFullReset = () => {
+        Alert.alert(
+            'Tam Sıfırlama',
+            'Uygulama tamamen sıfırlanacak. İlk açılış ekranına döneceksiniz. Emin misiniz?',
+            [
+                { text: 'İptal', style: 'cancel' },
+                {
+                    text: 'Sıfırla',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await resetDatabase();
+                            await resetOnboarding();
+                            router.replace('/onboarding');
+                        } catch (error) {
+                            Alert.alert('Hata', 'Sıfırlama işlemi başarısız oldu.');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const handleResetOnboardingOnly = () => {
@@ -67,17 +79,22 @@ export default function DevScreen() {
         router.replace('/onboarding');
     };
 
-    const handleClearStorage = async () => {
-        const confirmed = typeof window !== 'undefined' && window.confirm
-            ? window.confirm('Tüm AsyncStorage verileri silinecek. Emin misiniz?')
-            : true;
-
-        if (confirmed) {
-            await AsyncStorage.clear();
-            if (typeof window !== 'undefined' && window.alert) {
-                window.alert('AsyncStorage temizlendi!');
-            }
-        }
+    const handleClearStorage = () => {
+        Alert.alert(
+            'AsyncStorage Temizle',
+            'Tüm AsyncStorage verileri silinecek. Emin misiniz?',
+            [
+                { text: 'İptal', style: 'cancel' },
+                {
+                    text: 'Temizle',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await AsyncStorage.clear();
+                        Alert.alert('Başarılı', 'AsyncStorage temizlendi!');
+                    },
+                },
+            ]
+        );
     };
 
     const handleTestOnboarding = () => {
@@ -109,7 +126,7 @@ export default function DevScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
                 <TouchableOpacity onPress={() => router.back()}>
@@ -216,7 +233,7 @@ export default function DevScreen() {
                     </Text>
                 </View>
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 }
 

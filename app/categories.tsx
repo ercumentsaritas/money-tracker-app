@@ -7,6 +7,7 @@ import {
     FlatList,
     Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -44,7 +45,7 @@ export default function CategoriesScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
                 <TouchableOpacity onPress={() => router.back()}>
@@ -111,7 +112,7 @@ export default function CategoriesScreen() {
                 onCategoryAdded={loadCategories}
                 type={addType}
             />
-        </View>
+        </SafeAreaView>
     );
 }
 

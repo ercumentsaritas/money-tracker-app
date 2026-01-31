@@ -3,6 +3,7 @@ import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FABProps {
     onPress: () => void;
@@ -12,9 +13,13 @@ interface FABProps {
 export function FAB({ onPress, icon = 'add' }: FABProps) {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
+    const insets = useSafeAreaInsets();
+
+    // Calculate bottom position: base 24 + tab bar height (approx 60) + safe area
+    const bottomOffset = Math.max(24, insets.bottom) + 70;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { bottom: bottomOffset }]}>
             <TouchableOpacity
                 style={[styles.fab, { backgroundColor: colors.tint }]}
                 onPress={onPress}
@@ -29,7 +34,6 @@ export function FAB({ onPress, icon = 'add' }: FABProps) {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        bottom: 24,
         right: 24,
         zIndex: 100,
     },

@@ -16,5 +16,20 @@ export {
     addAccount,
     deleteAccount,
     updateAccountBalance,
+    updateAccount,
+    getTransactionsByAccount,
     getMonthlyStats,
+    // Recurring Transactions
+    getAllRecurringTransactions,
+    addRecurringTransaction,
+    updateRecurringTransaction,
+    deleteRecurringTransaction,
+    toggleRecurringTransaction,
+    // Goals
+    getAllGoals,
+    addGoal,
+    updateGoal,
+    deleteGoal,
+    addGoalDeposit,
+    getActiveGoals,
 } from './webStorage';

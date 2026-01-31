@@ -14,7 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "Bu uygulama, gelir ve gider işlemlerinizi cihaz takviminizle senkronize etmek için takvim erişimi ister.",
+        "NSRemindersUsageDescription": "Bu uygulama, hatırlatıcı oluşturabilmek için erişim ister."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +26,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "Ycom.ercuumeent.incometrackerapp",
+      "permissions": [
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -30,10 +39,25 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Bu uygulama, gelir ve gider işlemlerinizi cihaz takviminizle senkronize etmek için takvim erişimi ister."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "7117be9b-ba71-4c5d-9e93-36c8a8ae2292"
+      }
     }
   }
 }
