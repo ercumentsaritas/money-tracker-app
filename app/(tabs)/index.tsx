@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { StyleSheet, View, Text, FlatList, RefreshControl, TouchableOpacity, Modal, TextInput, Alert, Keyboard } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { BalanceCard } from '@/components/BalanceCard';
@@ -16,6 +17,10 @@ import { router } from 'expo-router';
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const insets = useSafeAreaInsets();
+
+  // Calculate bottom padding for floating tab bar
+  const tabBarHeight = 70 + Math.max(16, insets.bottom);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -195,7 +200,14 @@ export default function HomeScreen() {
 
             {accounts.length > 0 && (
               <>
-                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>HESAPLAR</Text>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <View style={[styles.sectionIcon, { backgroundColor: colors.income + '15' }]}>
+                      <Ionicons name="wallet" size={16} color={colors.income} />
+                    </View>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesaplar</Text>
+                  </View>
+                </View>
                 <View style={styles.accountsContainer}>
                   {accounts.map((account) => (
                     <AccountCard
@@ -208,7 +220,14 @@ export default function HomeScreen() {
               </>
             )}
             {transactions.length > 0 && (
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SON İŞLEMLER</Text>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <View style={[styles.sectionIcon, { backgroundColor: colors.tint + '15' }]}>
+                    <Ionicons name="receipt" size={16} color={colors.tint} />
+                  </View>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Son İşlemler</Text>
+                </View>
+              </View>
             )}
           </>
         }
@@ -228,7 +247,7 @@ export default function HomeScreen() {
             </Text>
           </View>
         }
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }}
       />
       <FAB onPress={handleAddTransaction} />
 

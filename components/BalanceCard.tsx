@@ -78,7 +78,7 @@ export function BalanceCard({ totalIncome, totalExpense, balance, month, account
                         </View>
                         <View style={styles.statContent}>
                             <Text style={styles.statLabel}>Gelir</Text>
-                            <Text style={styles.statAmount}>{formatAmount(totalIncome)}</Text>
+                            <Text style={styles.statAmount} numberOfLines={1} adjustsFontSizeToFit>{formatAmount(totalIncome)}</Text>
                         </View>
                     </View>
 
@@ -89,7 +89,7 @@ export function BalanceCard({ totalIncome, totalExpense, balance, month, account
                         </View>
                         <View style={styles.statContent}>
                             <Text style={styles.statLabel}>Gider</Text>
-                            <Text style={styles.statAmount}>{formatAmount(totalExpense)}</Text>
+                            <Text style={styles.statAmount} numberOfLines={1} adjustsFontSizeToFit>{formatAmount(totalExpense)}</Text>
                         </View>
                     </View>
                 </View>

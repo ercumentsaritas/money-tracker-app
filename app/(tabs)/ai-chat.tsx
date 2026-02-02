@@ -11,6 +11,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getAllTransactions, getAllCategories, getMonthlyStats } from '@/database';
@@ -24,7 +25,11 @@ interface Message {
 export default function AIChatScreen() {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
+    const insets = useSafeAreaInsets();
     const scrollViewRef = useRef<ScrollView>(null);
+
+    // Calculate bottom offset for floating tab bar
+    const tabBarHeight = 70 + Math.max(16, insets.bottom);
 
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -175,7 +180,14 @@ export default function AIChatScreen() {
                 )}
             </ScrollView>
 
-            <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[
+                styles.inputContainer,
+                {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                    marginBottom: tabBarHeight,
+                }
+            ]}>
                 <TextInput
                     style={[styles.input, { color: colors.text }]}
                     value={inputText}
