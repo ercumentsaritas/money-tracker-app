@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,8 +13,8 @@ function TabBarIcon(props: {
   focused: boolean;
 }) {
   return (
-    <View style={[styles.iconWrapper, props.focused && styles.iconFocused]}>
-      <Ionicons size={24} {...props} />
+    <View style={styles.iconWrapper}>
+      <Ionicons size={22} {...props} />
       {props.focused && <View style={[styles.indicator, { backgroundColor: props.color }]} />}
     </View>
   );
@@ -32,29 +32,19 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.tint,
         tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          position: 'absolute',
-          bottom: Math.max(16, insets.bottom),
-          left: 16,
-          right: 16,
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 10,
-          backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          borderRadius: 24,
-          borderTopWidth: 0,
-          elevation: 12,
-          shadowColor: isDark ? '#000' : colors.tint,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: isDark ? 0.4 : 0.15,
-          shadowRadius: 16,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 8,
+          paddingTop: 8,
+          backgroundColor: isDark ? colors.surface : '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
         },
         tabBarItemStyle: {
-          paddingVertical: 4,
+          paddingVertical: 2,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
-          marginTop: 4,
+          fontWeight: '500',
         },
         headerStyle: {
           backgroundColor: colors.background,
@@ -112,15 +102,11 @@ const styles = StyleSheet.create({
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 4,
-  },
-  iconFocused: {
-    transform: [{ scale: 1.1 }],
   },
   indicator: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    marginTop: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 3,
   },
 });

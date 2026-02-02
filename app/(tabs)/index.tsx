@@ -19,8 +19,8 @@ export default function HomeScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
 
-  // Calculate bottom padding for floating tab bar
-  const tabBarHeight = 70 + Math.max(16, insets.bottom);
+  // Calculate bottom padding for tab bar
+  const tabBarHeight = 60 + insets.bottom;
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);

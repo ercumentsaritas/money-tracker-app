@@ -28,8 +28,8 @@ export default function AIChatScreen() {
     const insets = useSafeAreaInsets();
     const scrollViewRef = useRef<ScrollView>(null);
 
-    // Calculate bottom offset for floating tab bar
-    const tabBarHeight = 70 + Math.max(16, insets.bottom);
+    // Calculate bottom offset for tab bar
+    const tabBarHeight = 60 + insets.bottom;
 
     const [messages, setMessages] = useState<Message[]>([
         {
