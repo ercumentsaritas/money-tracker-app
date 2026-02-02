@@ -131,10 +131,18 @@ export default function HomeScreen() {
 
   const renderGoalsSection = () => (
     <>
-      <View style={styles.goalHeaderRow}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>HEDEFLER</Text>
-        <TouchableOpacity onPress={() => setShowAddGoalModal(true)}>
-          <Ionicons name="add-circle-outline" size={22} color={colors.tint} />
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleRow}>
+          <View style={[styles.sectionIcon, { backgroundColor: colors.tint + '15' }]}>
+            <Ionicons name="flag" size={16} color={colors.tint} />
+          </View>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Hedefler</Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: colors.tint + '15' }]}
+          onPress={() => setShowAddGoalModal(true)}
+        >
+          <Ionicons name="add" size={18} color={colors.tint} />
         </TouchableOpacity>
       </View>
       {goals.length > 0 ? (
@@ -143,16 +151,22 @@ export default function HomeScreen() {
         ))
       ) : (
         <TouchableOpacity
-          style={[styles.emptyGoalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => setShowAddGoalModal(true)}
         >
-          <Ionicons name="flag-outline" size={32} color={colors.textSecondary} />
-          <Text style={[styles.emptyGoalText, { color: colors.textSecondary }]}>
+          <View style={[styles.emptyIconContainer, { backgroundColor: colors.tint + '10' }]}>
+            <Ionicons name="flag-outline" size={28} color={colors.tint} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>
             Henüz hedef yok
           </Text>
-          <Text style={[styles.emptyGoalSubtext, { color: colors.tint }]}>
-            + Yeni hedef ekle
+          <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+            Finansal hedeflerinizi takip edin
           </Text>
+          <View style={[styles.emptyButton, { backgroundColor: colors.tint }]}>
+            <Ionicons name="add" size={16} color="#FFFFFF" />
+            <Text style={styles.emptyButtonText}>Hedef Ekle</Text>
+          </View>
         </TouchableOpacity>
       )}
     </>
@@ -304,25 +318,42 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginHorizontal: 20,
-    marginTop: 28,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  goalHeaderRow: {
+  // Modern section header styles
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginHorizontal: 20,
     marginTop: 28,
-    marginBottom: 8,
+    marginBottom: 16,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Empty state styles
   empty: {
     alignItems: 'center',
     paddingVertical: 64,
@@ -332,15 +363,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  emptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    marginHorizontal: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    gap: 12,
+  },
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
   emptySubtext: {
-    fontSize: 13,
-    marginTop: 8,
+    fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
   },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginTop: 8,
+  },
+  emptyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   accountsContainer: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 10,
+  },
+  // Legacy styles (keeping for compatibility)
+  goalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginTop: 28,
+    marginBottom: 8,
   },
   emptyGoalCard: {
     alignItems: 'center',
@@ -360,61 +435,65 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 4,
   },
+  // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 28,
+    padding: 28,
     width: 320,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     marginBottom: 20,
     textAlign: 'center',
   },
   label: {
     fontSize: 13,
-    fontWeight: '500',
-    marginBottom: 6,
-    marginTop: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     fontSize: 16,
   },
   monthlyInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 16,
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    marginTop: 20,
   },
   monthlyInfoText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '500',
   },
   modalButtons: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 20,
+    marginTop: 24,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: 'center',
   },
   modalButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

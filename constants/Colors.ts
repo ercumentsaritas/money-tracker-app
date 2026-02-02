@@ -1,35 +1,55 @@
-// App color constants - Modern minimalist beige palette
-const tintColorLight = '#A68B6A'; // Warm beige-brown
-const tintColorDark = '#C9A882';
+// App color constants - Modern Premium Fintech Palette
+const tintColorLight = '#6366F1'; // Indigo
+const tintColorDark = '#818CF8';
 
 export const Colors = {
   light: {
-    text: '#2D2A26',
-    textSecondary: '#8C8579',
-    background: '#FAF8F5',
+    text: '#0F172A',
+    textSecondary: '#64748B',
+    background: '#F8FAFC',
     surface: '#FFFFFF',
-    surfaceAlt: '#F5F0EB',
+    surfaceAlt: '#F1F5F9',
     tint: tintColorLight,
-    tabIconDefault: '#BEB8B0',
+    tabIconDefault: '#94A3B8',
     tabIconSelected: tintColorLight,
-    border: '#E8E2DB',
-    income: '#6B9F78', // Soft sage green
-    expense: '#C97B7B', // Soft terracotta red
-    warning: '#D4A574',
+    border: '#E2E8F0',
+    income: '#10B981', // Emerald
+    expense: '#F43F5E', // Rose
+    warning: '#F59E0B', // Amber
+    // Gradient colors
+    gradientStart: '#6366F1',
+    gradientEnd: '#8B5CF6',
+    gradientIncome: '#10B981',
+    gradientIncomeEnd: '#34D399',
+    gradientExpense: '#F43F5E',
+    gradientExpenseEnd: '#FB7185',
+    // Card backgrounds
+    cardGlass: 'rgba(255, 255, 255, 0.8)',
+    cardOverlay: 'rgba(99, 102, 241, 0.05)',
   },
   dark: {
-    text: '#F5F0EB',
-    textSecondary: '#A39E96',
-    background: '#1A1917',
-    surface: '#252422',
-    surfaceAlt: '#2D2B28',
+    text: '#F8FAFC',
+    textSecondary: '#94A3B8',
+    background: '#0F172A',
+    surface: '#1E293B',
+    surfaceAlt: '#334155',
     tint: tintColorDark,
-    tabIconDefault: '#6B6560',
+    tabIconDefault: '#475569',
     tabIconSelected: tintColorDark,
-    border: '#3D3A36',
-    income: '#7FB88D', // Soft green
-    expense: '#D99696', // Soft rose
-    warning: '#E0B88A',
+    border: '#334155',
+    income: '#34D399', // Emerald light
+    expense: '#FB7185', // Rose light
+    warning: '#FBBF24', // Amber light
+    // Gradient colors
+    gradientStart: '#4F46E5',
+    gradientEnd: '#7C3AED',
+    gradientIncome: '#059669',
+    gradientIncomeEnd: '#10B981',
+    gradientExpense: '#E11D48',
+    gradientExpenseEnd: '#F43F5E',
+    // Card backgrounds
+    cardGlass: 'rgba(30, 41, 59, 0.8)',
+    cardOverlay: 'rgba(129, 140, 248, 0.1)',
   },
 };
 

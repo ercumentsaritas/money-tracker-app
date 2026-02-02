@@ -9,6 +9,7 @@ import {
     Alert,
     Keyboard,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -20,7 +21,6 @@ interface GoalCardProps {
     onDeposit?: () => void;
 }
 
-// Helper function for accurate month calculation
 function getMonthsDiff(startDate: Date, endDate: Date): number {
     const yearDiff = endDate.getFullYear() - startDate.getFullYear();
     const monthDiff = endDate.getMonth() - startDate.getMonth();
@@ -30,17 +30,16 @@ function getMonthsDiff(startDate: Date, endDate: Date): number {
 export function GoalCard({ goal, onDeposit }: GoalCardProps) {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
+    const isDark = colorScheme === 'dark';
 
     const [showDepositModal, setShowDepositModal] = useState(false);
     const [depositAmount, setDepositAmount] = useState('');
 
-    // Prevent division by zero
     const progress = goal.target_amount > 0
         ? Math.min(100, (goal.current_amount / goal.target_amount) * 100)
         : 0;
     const remaining = goal.target_amount - goal.current_amount;
 
-    // Calculate months info with proper date arithmetic
     const createdDate = new Date(goal.created_at);
     const deadlineDate = new Date(goal.deadline);
     const now = new Date();
@@ -82,65 +81,100 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
         }
     };
 
+    // Calculate color based on progress
+    const getProgressColor = (): readonly [string, string] => {
+        if (progress >= 75) return ['#10B981', '#34D399'] as const;
+        if (progress >= 50) return ['#6366F1', '#818CF8'] as const;
+        if (progress >= 25) return ['#F59E0B', '#FBBF24'] as const;
+        return ['#8B5CF6', '#A78BFA'] as const;
+    };
+
     return (
         <>
-            <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[
+                styles.container,
+                {
+                    backgroundColor: colors.surface,
+                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                }
+            ]}>
+                {/* Header */}
                 <View style={styles.header}>
-                    <View style={[styles.iconContainer, { backgroundColor: colors.tint + '15' }]}>
-                        <Ionicons name="flag" size={18} color={colors.tint} />
-                    </View>
+                    <LinearGradient
+                        colors={getProgressColor()}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.iconContainer}
+                    >
+                        <Ionicons name="flag" size={20} color="#FFFFFF" />
+                    </LinearGradient>
                     <View style={styles.titleContainer}>
                         <Text style={[styles.title, { color: colors.text }]}>{goal.name}</Text>
-                        <Text style={[styles.deadline, { color: colors.textSecondary }]}>
-                            Hedef: {formatDate(goal.deadline)}
-                        </Text>
+                        <View style={styles.deadlineRow}>
+                            <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
+                            <Text style={[styles.deadline, { color: colors.textSecondary }]}>
+                                {formatDate(goal.deadline)}
+                            </Text>
+                        </View>
                     </View>
                     <TouchableOpacity
-                        style={[styles.depositButton, { backgroundColor: colors.tint }]}
+                        style={styles.depositButton}
                         onPress={() => setShowDepositModal(true)}
                     >
-                        <Ionicons name="add" size={16} color="#FFFFFF" />
+                        <LinearGradient
+                            colors={isDark ? ['#818CF8', '#6366F1'] : ['#6366F1', '#4F46E5']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.depositButtonGradient}
+                        >
+                            <Ionicons name="add" size={18} color="#FFFFFF" />
+                        </LinearGradient>
                     </TouchableOpacity>
                 </View>
 
-                {/* Progress Bar */}
-                <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-                    <View
-                        style={[
-                            styles.progressFill,
-                            { backgroundColor: colors.tint, width: `${progress}%` },
-                        ]}
-                    />
+                {/* Progress Section */}
+                <View style={styles.progressSection}>
+                    <View style={styles.progressHeader}>
+                        <Text style={[styles.progressPercent, { color: colors.text }]}>
+                            {Math.round(progress)}%
+                        </Text>
+                        <Text style={[styles.progressTarget, { color: colors.textSecondary }]}>
+                            {formatAmount(goal.current_amount)} / {formatAmount(goal.target_amount)}
+                        </Text>
+                    </View>
+                    <View style={[styles.progressBar, { backgroundColor: colors.surfaceAlt }]}>
+                        <LinearGradient
+                            colors={getProgressColor()}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={[styles.progressFill, { width: `${progress}%` }]}
+                        />
+                    </View>
                 </View>
 
                 {/* Stats */}
                 <View style={styles.statsRow}>
-                    <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: colors.text }]}>
-                            {formatAmount(goal.current_amount)}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Biriktirilen</Text>
-                    </View>
-                    <View style={styles.stat}>
+                    <View style={[styles.statCard, { backgroundColor: colors.surfaceAlt }]}>
+                        <Ionicons name="wallet-outline" size={16} color={colors.income} />
                         <Text style={[styles.statValue, { color: colors.text }]}>
                             {formatAmount(remaining)}
                         </Text>
                         <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Kalan</Text>
                     </View>
-                    <View style={styles.stat}>
+                    <View style={[styles.statCard, { backgroundColor: colors.surfaceAlt }]}>
+                        <Ionicons name="calendar-outline" size={16} color={colors.tint} />
                         <Text style={[styles.statValue, { color: colors.text }]}>
                             {currentInstallment}/{totalMonths}
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Taksit</Text>
+                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Ay</Text>
                     </View>
-                </View>
-
-                {/* Monthly Target Reminder */}
-                <View style={[styles.reminder, { backgroundColor: colors.tint + '10' }]}>
-                    <Ionicons name="notifications-outline" size={16} color={colors.tint} />
-                    <Text style={[styles.reminderText, { color: colors.tint }]}>
-                        Bu ay {formatAmount(goal.monthly_target)} yatırmanız gerekiyor
-                    </Text>
+                    <View style={[styles.statCard, { backgroundColor: colors.surfaceAlt }]}>
+                        <Ionicons name="repeat-outline" size={16} color={colors.warning} />
+                        <Text style={[styles.statValue, { color: colors.text }]}>
+                            {formatAmount(goal.monthly_target)}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Aylık</Text>
+                    </View>
                 </View>
             </View>
 
@@ -158,12 +192,27 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
                         style={[styles.modalContent, { backgroundColor: colors.surface }]}
                         onStartShouldSetResponder={() => true}
                     >
+                        <View style={styles.modalHeader}>
+                            <LinearGradient
+                                colors={['#6366F1', '#8B5CF6']}
+                                style={styles.modalIcon}
+                            >
+                                <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+                            </LinearGradient>
+                        </View>
                         <Text style={[styles.modalTitle, { color: colors.text }]}>Para Yatır</Text>
                         <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                            "{goal.name}" hedefine ne kadar yatırmak istiyorsunuz?
+                            "{goal.name}" hedefine
                         </Text>
                         <TextInput
-                            style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                            style={[
+                                styles.input,
+                                {
+                                    backgroundColor: colors.surfaceAlt,
+                                    color: colors.text,
+                                    borderColor: colors.border,
+                                }
+                            ]}
                             placeholder="₺0"
                             placeholderTextColor={colors.textSecondary}
                             value={depositAmount}
@@ -179,10 +228,18 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
                                 <Text style={[styles.modalButtonText, { color: colors.text }]}>İptal</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.modalButton, { backgroundColor: colors.tint }]}
+                                style={styles.modalButtonPrimary}
                                 onPress={handleDeposit}
                             >
-                                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Yatır</Text>
+                                <LinearGradient
+                                    colors={['#6366F1', '#4F46E5']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.modalButtonGradient}
+                                >
+                                    <Ionicons name="add" size={18} color="#FFFFFF" />
+                                    <Text style={styles.modalButtonTextWhite}>Yatır</Text>
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -194,123 +251,178 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
 
 const styles = StyleSheet.create({
     container: {
-        borderRadius: 16,
+        borderRadius: 24,
         borderWidth: 1,
-        padding: 16,
+        padding: 20,
         marginHorizontal: 16,
         marginBottom: 12,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 14,
+        marginBottom: 20,
     },
     iconContainer: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
+        width: 48,
+        height: 48,
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
     },
     titleContainer: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: 14,
     },
     title: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 18,
+        fontWeight: '700',
+        letterSpacing: -0.3,
+    },
+    deadlineRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 4,
     },
     deadline: {
         fontSize: 12,
-        marginTop: 2,
+        fontWeight: '500',
     },
     depositButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        borderRadius: 14,
+        overflow: 'hidden',
+    },
+    depositButtonGradient: {
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
+    progressSection: {
+        marginBottom: 20,
+    },
+    progressHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        marginBottom: 10,
+    },
+    progressPercent: {
+        fontSize: 28,
+        fontWeight: '800',
+        letterSpacing: -1,
+    },
+    progressTarget: {
+        fontSize: 13,
+        fontWeight: '500',
+    },
     progressBar: {
-        height: 8,
-        borderRadius: 4,
+        height: 10,
+        borderRadius: 5,
         overflow: 'hidden',
-        marginBottom: 14,
     },
     progressFill: {
         height: '100%',
-        borderRadius: 4,
+        borderRadius: 5,
     },
     statsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 12,
+        gap: 10,
     },
-    stat: {
+    statCard: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 14,
         alignItems: 'center',
+        gap: 6,
     },
     statValue: {
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     statLabel: {
-        fontSize: 11,
-        marginTop: 2,
-    },
-    reminder: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        padding: 10,
-        borderRadius: 10,
-    },
-    reminderText: {
-        fontSize: 12,
-        fontWeight: '500',
+        fontSize: 10,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.3,
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.6)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     modalContent: {
-        borderRadius: 20,
-        padding: 24,
-        width: 300,
+        borderRadius: 28,
+        padding: 28,
+        width: 320,
+        alignItems: 'center',
+    },
+    modalHeader: {
+        marginBottom: 16,
+    },
+    modalIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     modalTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
+        fontSize: 22,
+        fontWeight: '700',
+        marginBottom: 4,
     },
     modalSubtitle: {
-        fontSize: 13,
-        marginBottom: 20,
-        textAlign: 'center',
+        fontSize: 14,
+        marginBottom: 24,
     },
     input: {
-        borderRadius: 12,
+        width: '100%',
+        borderRadius: 16,
         borderWidth: 1,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        fontSize: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        fontSize: 24,
         textAlign: 'center',
-        marginBottom: 20,
+        fontWeight: '700',
+        marginBottom: 24,
     },
     modalButtons: {
         flexDirection: 'row',
         gap: 12,
+        width: '100%',
     },
     modalButton: {
         flex: 1,
-        paddingVertical: 14,
-        borderRadius: 12,
+        paddingVertical: 16,
+        borderRadius: 14,
         alignItems: 'center',
     },
+    modalButtonPrimary: {
+        flex: 1,
+        borderRadius: 14,
+        overflow: 'hidden',
+    },
+    modalButtonGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        gap: 6,
+    },
     modalButtonText: {
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: '600',
+    },
+    modalButtonTextWhite: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
     },
 });
