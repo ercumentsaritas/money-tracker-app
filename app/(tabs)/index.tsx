@@ -173,6 +173,7 @@ export default function HomeScreen() {
               totalExpense={stats.totalExpense}
               balance={stats.balance}
               month={monthName}
+              accountBalance={accounts.find(a => a.name.toLowerCase().includes('nakit'))?.balance ?? 0}
             />
 
             {/* Goals Section */}

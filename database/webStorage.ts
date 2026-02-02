@@ -437,6 +437,92 @@ export async function toggleRecurringTransaction(id: string): Promise<void> {
     }
 }
 
+// Process recurring transactions - creates actual transactions for due recurring items
+export async function processRecurringTransactions(): Promise<number> {
+    await initDatabase();
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+
+    let processedCount = 0;
+    const recurringList = memoryStorage.recurringTransactions?.filter(r => r.is_active) || [];
+
+    for (const recurring of recurringList) {
+        let nextDate = new Date(recurring.next_date);
+
+        // Process all due occurrences (in case app wasn't opened for multiple periods)
+        while (nextDate <= today) {
+            // Create actual transaction for this occurrence
+            const dateString = nextDate.toISOString().split('T')[0];
+
+            // Check if this transaction was already created (avoid duplicates)
+            const existingTx = memoryStorage.transactions.find(
+                t => t.recurring_id === recurring.id && t.date === dateString
+            );
+
+            if (!existingTx) {
+                const id = generateUUID();
+                const created_at = new Date().toISOString();
+
+                const transaction = {
+                    id,
+                    type: recurring.type,
+                    amount: recurring.amount,
+                    category_id: recurring.category_id,
+                    account_id: recurring.account_id,
+                    description: recurring.name,
+                    date: dateString,
+                    is_recurring: true,
+                    recurring_id: recurring.id,
+                    calendar_event_id: null,
+                    synced: false,
+                    created_at,
+                };
+
+                memoryStorage.transactions.push(transaction);
+
+                // Update account balance (since the date is in the past or today)
+                updateAccountBalanceHelper(recurring.account_id, recurring.amount, recurring.type);
+
+                processedCount++;
+                console.log(`[Recurring] Processed: ${recurring.name} for ${dateString}`);
+            }
+
+            // Calculate next occurrence based on frequency
+            switch (recurring.frequency) {
+                case 'daily':
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    break;
+                case 'weekly':
+                    nextDate.setDate(nextDate.getDate() + 7);
+                    break;
+                case 'monthly':
+                    nextDate.setMonth(nextDate.getMonth() + 1);
+                    // Handle day_of_month if specified
+                    if (recurring.day_of_month) {
+                        nextDate.setDate(recurring.day_of_month);
+                    }
+                    break;
+                case 'yearly':
+                    nextDate.setFullYear(nextDate.getFullYear() + 1);
+                    if (recurring.day_of_month) {
+                        nextDate.setDate(recurring.day_of_month);
+                    }
+                    break;
+            }
+        }
+
+        // Update recurring transaction's next_date
+        recurring.next_date = nextDate.toISOString();
+    }
+
+    if (processedCount > 0) {
+        await saveToStorage();
+    }
+
+    return processedCount;
+}
+
 // ============ GOALS ============
 
 export async function getAllGoals(): Promise<Goal[]> {

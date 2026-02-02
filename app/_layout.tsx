@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { processRecurringTransactions } from '@/database';
 import AuthScreen from './auth';
 
 export {
@@ -58,6 +59,19 @@ function RootLayoutNav() {
       router.replace('/onboarding');
     }
   }, [isOnboarded]);
+
+  // Process recurring transactions when app loads and user is authenticated
+  useEffect(() => {
+    if (isOnboarded && isAuthenticated) {
+      processRecurringTransactions().then((count) => {
+        if (count > 0) {
+          console.log(`[App] Processed ${count} recurring transaction(s)`);
+        }
+      }).catch((error) => {
+        console.error('[App] Failed to process recurring transactions:', error);
+      });
+    }
+  }, [isOnboarded, isAuthenticated]);
 
   // Show auth screen if PIN is enabled but user is not authenticated
   if (isPinEnabled && !isAuthenticated && isOnboarded) {

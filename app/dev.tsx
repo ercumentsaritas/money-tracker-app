@@ -6,6 +6,8 @@ import {
     TouchableOpacity,
     ScrollView,
     Alert,
+    ActivityIndicator,
+    Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -49,7 +51,8 @@ function TestButton({ icon, title, description, onPress, color }: TestButtonProp
 export default function DevScreen() {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
-    const { resetOnboarding, setTheme } = useTheme();
+    const { resetOnboarding, setTheme, removePin } = useTheme();
+    const [isResetting, setIsResetting] = React.useState(false);
 
     const handleFullReset = () => {
         Alert.alert(
@@ -62,10 +65,17 @@ export default function DevScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            setIsResetting(true);
                             await resetDatabase();
                             await resetOnboarding();
-                            router.replace('/onboarding');
+                            await removePin();
+
+                            setTimeout(() => {
+                                setIsResetting(false);
+                                router.replace('/onboarding');
+                            }, 1500);
                         } catch (error) {
+                            setIsResetting(false);
                             Alert.alert('Hata', 'Sıfırlama işlemi başarısız oldu.');
                         }
                     },
@@ -74,8 +84,8 @@ export default function DevScreen() {
         );
     };
 
-    const handleResetOnboardingOnly = () => {
-        resetOnboarding();
+    const handleResetOnboardingOnly = async () => {
+        await resetOnboarding();
         router.replace('/onboarding');
     };
 
@@ -233,6 +243,17 @@ export default function DevScreen() {
                     </Text>
                 </View>
             </ScrollView>
+
+            {/* Resetting Loading Overlay */}
+            <Modal transparent visible={isResetting} animationType="fade">
+                <View style={styles.loadingOverlay}>
+                    <View style={[styles.loadingContent, { backgroundColor: colors.surface }]}>
+                        <ActivityIndicator size="large" color={colors.tint} />
+                        <Text style={[styles.loadingText, { color: colors.text }]}>Uygulama Sıfırlanıyor...</Text>
+                        <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>Lütfen bekleyin, veriler temizleniyor.</Text>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -314,5 +335,33 @@ const styles = StyleSheet.create({
     },
     footerText: {
         fontSize: 13,
+    },
+    loadingOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingContent: {
+        padding: 30,
+        borderRadius: 20,
+        alignItems: 'center',
+        width: '80%',
+        maxWidth: 300,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    loadingText: {
+        marginTop: 20,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    loadingSubtext: {
+        marginTop: 8,
+        fontSize: 13,
+        textAlign: 'center',
     },
 });

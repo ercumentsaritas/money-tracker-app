@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, Switch, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, Switch, Platform, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
@@ -56,11 +56,13 @@ export default function SettingsScreen() {
         isPinEnabled,
         isBiometricEnabled,
         setPin,
-        removePin,
-        enableBiometric
+        enableBiometric,
+        resetOnboarding,
+        removePin
     } = useTheme();
 
     const [showPinSetup, setShowPinSetup] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
     const [biometricAvailable, setBiometricAvailable] = useState(false);
     const [biometricType, setBiometricType] = useState<'face' | 'fingerprint' | null>(null);
 
@@ -90,7 +92,7 @@ export default function SettingsScreen() {
     const handleResetDatabase = () => {
         Alert.alert(
             'Veritabanını Sıfırla',
-            'Tüm veriler silinecek. Bu işlem geri alınamaz. Emin misiniz?',
+            'Tüm veriler, ayarlar ve güvenlik seçenekleri silinecek. Bu işlem geri alınamaz. Emin misiniz?',
             [
                 { text: 'İptal', style: 'cancel' },
                 {
@@ -98,14 +100,24 @@ export default function SettingsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            setIsResetting(true);
+
+                            // 1. Reset database
                             await resetDatabase();
-                            // Force re-render by navigating away and back
-                            router.replace('/(tabs)/settings');
+
+                            // 2. Reset onboarding state
+                            await resetOnboarding();
+
+                            // 3. Reset security settings
+                            await removePin();
+
+                            // Brief delay to show the "waiting" screen as requested
                             setTimeout(() => {
-                                router.replace('/(tabs)');
-                                Alert.alert('Başarılı', 'Veritabanı sıfırlandı.');
-                            }, 100);
+                                setIsResetting(false);
+                                router.replace('/onboarding');
+                            }, 1500);
                         } catch (error) {
+                            setIsResetting(false);
                             Alert.alert('Hata', 'Veritabanı sıfırlanamadı.');
                         }
                     },
@@ -310,6 +322,17 @@ export default function SettingsScreen() {
                 onClose={() => setShowPinSetup(false)}
                 onPinSet={handlePinSet}
             />
+
+            {/* Resetting Loading Overlay */}
+            <Modal transparent visible={isResetting} animationType="fade">
+                <View style={styles.loadingOverlay}>
+                    <View style={[styles.loadingContent, { backgroundColor: colors.surface }]}>
+                        <ActivityIndicator size="large" color={colors.tint} />
+                        <Text style={[styles.loadingText, { color: colors.text }]}>Uygulama Sıfırlanıyor...</Text>
+                        <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>Lütfen bekleyin, veriler temizleniyor.</Text>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -366,5 +389,33 @@ const styles = StyleSheet.create({
     },
     version: {
         fontSize: 13,
+    },
+    loadingOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingContent: {
+        padding: 30,
+        borderRadius: 20,
+        alignItems: 'center',
+        width: '80%',
+        maxWidth: 300,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    loadingText: {
+        marginTop: 20,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    loadingSubtext: {
+        marginTop: 8,
+        fontSize: 13,
+        textAlign: 'center',
     },
 });

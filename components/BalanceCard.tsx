@@ -8,9 +8,10 @@ interface BalanceCardProps {
     totalExpense: number;
     balance: number;
     month: string;
+    accountBalance?: number; // Actual cash account balance
 }
 
-export function BalanceCard({ totalIncome, totalExpense, balance, month }: BalanceCardProps) {
+export function BalanceCard({ totalIncome, totalExpense, balance, month, accountBalance }: BalanceCardProps) {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
 
@@ -23,11 +24,14 @@ export function BalanceCard({ totalIncome, totalExpense, balance, month }: Balan
         }).format(amount);
     };
 
+    // Use accountBalance if provided, otherwise fall back to monthly balance
+    const displayBalance = accountBalance !== undefined ? accountBalance : balance;
+
     return (
         <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.monthLabel, { color: colors.textSecondary }]}>{month}</Text>
-            <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Bakiye</Text>
-            <Text style={[styles.balanceAmount, { color: colors.text }]}>{formatAmount(balance)}</Text>
+            <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Toplam Bakiye</Text>
+            <Text style={[styles.balanceAmount, { color: colors.text }]}>{formatAmount(displayBalance)}</Text>
 
             <View style={[styles.row, { borderTopColor: colors.border }]}>
                 <View style={styles.stat}>

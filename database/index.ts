@@ -25,6 +25,7 @@ export {
     updateRecurringTransaction,
     deleteRecurringTransaction,
     toggleRecurringTransaction,
+    processRecurringTransactions,
     // Goals
     getAllGoals,
     addGoal,
