@@ -185,7 +185,6 @@ export default function AIChatScreen() {
                 {
                     backgroundColor: colors.surface,
                     borderColor: colors.border,
-                    marginBottom: tabBarHeight,
                 }
             ]}>
                 <TextInput
