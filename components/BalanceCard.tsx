@@ -34,30 +34,26 @@ export function BalanceCard({ totalIncome, totalExpense, balance, month, account
         <View style={styles.container}>
             <LinearGradient
                 colors={isDark
-                    ? ['#4F46E5', '#7C3AED', '#6366F1']
-                    : ['#6366F1', '#8B5CF6', '#A78BFA']}
+                    ? ['#1E3A5F', '#0F2A47', '#1A3550']
+                    : ['#0F4C75', '#1B6CA8', '#3282B8']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradient}
             >
-                {/* Decorative circles */}
-                <View style={styles.decorCircle1} />
-                <View style={styles.decorCircle2} />
-
                 {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.monthBadge}>
                         <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.9)" />
                         <Text style={styles.monthText}>{month}</Text>
                     </View>
-                    <View style={styles.statusDot} />
+                    <View style={[styles.statusDot, { backgroundColor: isPositive ? '#34D399' : '#FB7185' }]} />
                 </View>
 
                 {/* Main Balance */}
                 <View style={styles.balanceSection}>
                     <Text style={styles.balanceLabel}>Toplam Bakiye</Text>
                     <Text style={styles.balanceAmount}>{formatAmount(displayBalance)}</Text>
-                    <View style={styles.trendBadge}>
+                    <View style={[styles.trendBadge, { backgroundColor: isPositive ? 'rgba(52, 211, 153, 0.2)' : 'rgba(251, 113, 133, 0.2)' }]}>
                         <Ionicons
                             name={isPositive ? "trending-up" : "trending-down"}
                             size={14}
@@ -100,38 +96,20 @@ export function BalanceCard({ totalIncome, totalExpense, balance, month, account
 
 const styles = StyleSheet.create({
     container: {
-        margin: 16,
-        borderRadius: 28,
+        marginHorizontal: 16,
+        marginTop: 8,
+        marginBottom: 16,
+        borderRadius: 24,
         overflow: 'hidden',
         elevation: 8,
-        shadowColor: '#6366F1',
+        shadowColor: '#0F4C75',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.25,
         shadowRadius: 16,
     },
     gradient: {
         padding: 24,
-        paddingTop: 20,
-        position: 'relative',
-        overflow: 'hidden',
-    },
-    decorCircle1: {
-        position: 'absolute',
-        top: -60,
-        right: -60,
-        width: 180,
-        height: 180,
-        borderRadius: 90,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    decorCircle2: {
-        position: 'absolute',
-        bottom: -40,
-        left: -40,
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        borderRadius: 24,
     },
     header: {
         flexDirection: 'row',
@@ -158,11 +136,6 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: '#34D399',
-        shadowColor: '#34D399',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 8,
     },
     balanceSection: {
         alignItems: 'center',
@@ -178,20 +151,15 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 44,
         fontWeight: '700',
-        marginTop: 8,
-        letterSpacing: -1,
-        textShadowColor: 'rgba(0, 0, 0, 0.15)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
+        letterSpacing: -2,
+        marginVertical: 8,
     },
     trendBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 16,
-        marginTop: 12,
+        borderRadius: 20,
         gap: 6,
     },
     trendText: {
@@ -206,7 +174,7 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         padding: 14,
         borderRadius: 16,
         gap: 12,
