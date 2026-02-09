@@ -52,7 +52,7 @@ export function BalanceCard({ totalIncome, totalExpense, balance, month, account
                 {/* Main Balance */}
                 <View style={styles.balanceSection}>
                     <Text style={styles.balanceLabel}>Toplam Bakiye</Text>
-                    <Text style={styles.balanceAmount}>{formatAmount(displayBalance)}</Text>
+                    <Text style={styles.balanceAmount} numberOfLines={1} adjustsFontSizeToFit>{formatAmount(displayBalance)}</Text>
                     <View style={[styles.trendBadge, { backgroundColor: isPositive ? 'rgba(52, 211, 153, 0.2)' : 'rgba(251, 113, 133, 0.2)' }]}>
                         <Ionicons
                             name={isPositive ? "trending-up" : "trending-down"}

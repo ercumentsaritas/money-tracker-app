@@ -37,6 +37,7 @@ export default function AddTransactionScreen() {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -65,6 +66,7 @@ export default function AddTransactionScreen() {
             return;
         }
 
+        setSaving(true);
         try {
             await addTransaction({
                 type,
@@ -78,6 +80,8 @@ export default function AddTransactionScreen() {
         } catch (error) {
             console.error('Failed to add transaction:', error);
             Alert.alert('Hata', 'İşlem kaydedilemedi');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -93,8 +97,10 @@ export default function AddTransactionScreen() {
                             <Ionicons name="close" size={28} color={colors.text} />
                         </TouchableOpacity>
                         <Text style={[styles.headerTitle, { color: colors.text }]}>Yeni İşlem</Text>
-                        <TouchableOpacity onPress={handleSave}>
-                            <Text style={[styles.saveButton, { color: colors.tint }]}>Kaydet</Text>
+                        <TouchableOpacity onPress={handleSave} disabled={saving}>
+                            <Text style={[styles.saveButton, { color: colors.tint, opacity: saving ? 0.5 : 1 }]}>
+                                {saving ? 'Kaydediliyor...' : 'Kaydet'}
+                            </Text>
                         </TouchableOpacity>
                     </View>
 

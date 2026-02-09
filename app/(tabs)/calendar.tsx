@@ -153,8 +153,15 @@ export default function CalendarScreen() {
         return type === 'income' ? `+${formatted}` : `-${formatted}`;
     };
 
-    const getCategoryById = (id: string): Category | undefined => {
-        return categories.find(c => c.id === id);
+    const getCategoryById = (id: string): Category => {
+        const category = categories.find(c => c.id === id);
+        return category ?? {
+            id: 'unknown',
+            name: 'Bilinmeyen',
+            type: 'expense',
+            icon: 'help-circle',
+            color: '#999999'
+        };
     };
 
     const renderDay = ({ item: day, index }: { item: number | null; index: number }) => {
@@ -210,18 +217,16 @@ export default function CalendarScreen() {
                     { backgroundColor: item.type === 'income' ? colors.income + '15' : colors.expense + '15' }
                 ]}>
                     <Ionicons
-                        name={category?.icon as any || (item.type === 'income' ? 'trending-up' : 'trending-down')}
+                        name={category.icon as any || (item.type === 'income' ? 'trending-up' : 'trending-down')}
                         size={22}
                         color={item.type === 'income' ? colors.income : colors.expense}
                     />
                 </View>
                 <View style={styles.transactionContent}>
                     <Text style={[styles.transactionName, { color: colors.text }]}>{item.description}</Text>
-                    {category && (
-                        <Text style={[styles.transactionCategory, { color: colors.textSecondary }]}>
-                            {category.name}
-                        </Text>
-                    )}
+                    <Text style={[styles.transactionCategory, { color: colors.textSecondary }]}>
+                        {category.name}
+                    </Text>
                 </View>
                 <Text style={[
                     styles.transactionAmount,

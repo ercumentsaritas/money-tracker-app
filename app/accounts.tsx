@@ -8,6 +8,7 @@ import {
     TextInput,
     Modal,
     Alert,
+    Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
@@ -24,6 +25,7 @@ export default function AccountsScreen() {
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newAccountName, setNewAccountName] = useState('');
+    const [adding, setAdding] = useState(false);
 
     const loadAccounts = useCallback(async () => {
         await initDatabase();
@@ -40,6 +42,7 @@ export default function AccountsScreen() {
     const handleAddAccount = async () => {
         if (!newAccountName.trim()) return;
 
+        setAdding(true);
         try {
             await addAccount({
                 name: newAccountName.trim(),
@@ -52,6 +55,8 @@ export default function AccountsScreen() {
         } catch (error) {
             console.error('Failed to add account:', error);
             Alert.alert('Hata', 'Hesap eklenemedi');
+        } finally {
+            setAdding(false);
         }
     };
 
@@ -136,7 +141,10 @@ export default function AccountsScreen() {
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
-                    onPress={() => setShowAddModal(false)}
+                    onPress={() => {
+                        Keyboard.dismiss();
+                        setShowAddModal(false);
+                    }}
                 >
                     <View
                         style={[styles.modalContent, { backgroundColor: colors.surface }]}
@@ -155,14 +163,18 @@ export default function AccountsScreen() {
                             <TouchableOpacity
                                 style={[styles.modalButton, { backgroundColor: colors.surfaceAlt }]}
                                 onPress={() => setShowAddModal(false)}
+                                disabled={adding}
                             >
                                 <Text style={[styles.modalButtonText, { color: colors.text }]}>İptal</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.modalButton, { backgroundColor: colors.tint }]}
+                                style={[styles.modalButton, { backgroundColor: colors.tint, opacity: adding ? 0.6 : 1 }]}
                                 onPress={handleAddAccount}
+                                disabled={adding}
                             >
-                                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Ekle</Text>
+                                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>
+                                    {adding ? 'Ekleniyor...' : 'Ekle'}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -227,7 +239,7 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.6)',
         justifyContent: 'center',
         alignItems: 'center',
     },

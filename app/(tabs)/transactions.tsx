@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { StyleSheet, View, Text, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -86,7 +87,7 @@ export default function TransactionsScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
             {/* Filter buttons */}
             <View style={styles.filterRow}>
                 {(['all', 'income', 'expense'] as const).map((type) => (
@@ -146,7 +147,7 @@ export default function TransactionsScreen() {
                 contentContainerStyle={styles.list}
             />
             <FAB onPress={handleAddTransaction} />
-        </View>
+        </SafeAreaView>
     );
 }
 
