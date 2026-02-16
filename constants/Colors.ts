@@ -1,55 +1,55 @@
-// App color constants - Modern Premium Fintech Palette
-const tintColorLight = '#6366F1'; // Indigo
-const tintColorDark = '#818CF8';
+// App color constants - Cream & Sage Minimal Palette
+const tintColorLight = '#5B6F5B'; // Muted sage green
+const tintColorDark = '#8FAE8B'; // Lighter sage for dark mode
 
 export const Colors = {
   light: {
-    text: '#0F172A',
-    textSecondary: '#64748B',
-    background: '#F8FAFC',
-    surface: '#FFFFFF',
-    surfaceAlt: '#F1F5F9',
+    text: '#1A1A1A',
+    textSecondary: '#8A8A80',
+    background: '#EDEBE6', // Warm cream
+    surface: '#F5F3EE', // Slightly lighter cream
+    surfaceAlt: '#E8E5E0',
     tint: tintColorLight,
-    tabIconDefault: '#94A3B8',
+    tabIconDefault: '#B0AEA6',
     tabIconSelected: tintColorLight,
-    border: '#E2E8F0',
-    income: '#10B981', // Emerald
-    expense: '#F43F5E', // Rose
-    warning: '#F59E0B', // Amber
+    border: '#DDD9D3',
+    income: '#5B6F5B', // Sage green
+    expense: '#B8A08A', // Warm taupe
+    warning: '#C4A070', // Muted amber
     // Gradient colors
-    gradientStart: '#6366F1',
-    gradientEnd: '#8B5CF6',
-    gradientIncome: '#10B981',
-    gradientIncomeEnd: '#34D399',
-    gradientExpense: '#F43F5E',
-    gradientExpenseEnd: '#FB7185',
+    gradientStart: '#5B6F5B',
+    gradientEnd: '#7A9178',
+    gradientIncome: '#5B6F5B',
+    gradientIncomeEnd: '#7A9178',
+    gradientExpense: '#B8A08A',
+    gradientExpenseEnd: '#CCBB9F',
     // Card backgrounds
-    cardGlass: 'rgba(255, 255, 255, 0.8)',
-    cardOverlay: 'rgba(99, 102, 241, 0.05)',
+    cardGlass: 'rgba(245, 243, 238, 0.95)',
+    cardOverlay: 'rgba(91, 111, 91, 0.04)',
   },
   dark: {
-    text: '#F8FAFC',
-    textSecondary: '#94A3B8',
-    background: '#0F172A',
-    surface: '#1E293B',
-    surfaceAlt: '#334155',
+    text: '#F0EDE8',
+    textSecondary: '#9CA3AF',
+    background: '#1A1A1A',
+    surface: '#242424',
+    surfaceAlt: '#2E2E2E',
     tint: tintColorDark,
-    tabIconDefault: '#475569',
+    tabIconDefault: '#6B7280',
     tabIconSelected: tintColorDark,
-    border: '#334155',
-    income: '#34D399', // Emerald light
-    expense: '#FB7185', // Rose light
-    warning: '#FBBF24', // Amber light
+    border: '#3A3A3A',
+    income: '#8FAE8B', // Light sage
+    expense: '#D4B896', // Light taupe
+    warning: '#E5C9A8', // Light amber
     // Gradient colors
-    gradientStart: '#4F46E5',
-    gradientEnd: '#7C3AED',
-    gradientIncome: '#059669',
-    gradientIncomeEnd: '#10B981',
-    gradientExpense: '#E11D48',
-    gradientExpenseEnd: '#F43F5E',
+    gradientStart: '#4A6B4A',
+    gradientEnd: '#5D7A5D',
+    gradientIncome: '#4A7C59',
+    gradientIncomeEnd: '#6B9B6B',
+    gradientExpense: '#B89A74',
+    gradientExpenseEnd: '#C4A484',
     // Card backgrounds
-    cardGlass: 'rgba(30, 41, 59, 0.8)',
-    cardOverlay: 'rgba(129, 140, 248, 0.1)',
+    cardGlass: 'rgba(36, 36, 36, 0.9)',
+    cardOverlay: 'rgba(143, 174, 139, 0.1)',
   },
 };
 

@@ -6,10 +6,11 @@ import {
     TouchableOpacity,
     FlatList,
     ScrollView,
+    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { CaretLeft, CaretRight, CalendarBlank, ArrowUp, ArrowDown } from 'phosphor-react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Transaction, Category } from '@/types';
@@ -26,6 +27,7 @@ const DAYS_TR = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 export default function CalendarScreen() {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
+    const isDark = colorScheme === 'dark';
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export default function CalendarScreen() {
 
     const getFirstDayOfMonth = (date: Date) => {
         const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-        return day === 0 ? 6 : day - 1; // Convert to Monday-based (0 = Monday)
+        return day === 0 ? 6 : day - 1;
     };
 
     const goToPreviousMonth = () => {
@@ -73,18 +75,15 @@ export default function CalendarScreen() {
         setSelectedDate(today.toISOString().split('T')[0]);
     };
 
-    // Generate calendar days for current month
     const calendarDays = useMemo(() => {
         const daysInMonth = getDaysInMonth(currentDate);
         const firstDay = getFirstDayOfMonth(currentDate);
         const days: (number | null)[] = [];
 
-        // Add empty cells for days before the first day of month
         for (let i = 0; i < firstDay; i++) {
             days.push(null);
         }
 
-        // Add days of the month
         for (let i = 1; i <= daysInMonth; i++) {
             days.push(i);
         }
@@ -92,19 +91,16 @@ export default function CalendarScreen() {
         return days;
     }, [currentDate]);
 
-    // Get transactions for a specific date
     const getTransactionsForDate = useCallback((day: number) => {
         const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         return transactions.filter(t => t.date.startsWith(dateStr));
     }, [transactions, currentDate]);
 
-    // Get transactions for selected date
     const selectedDateTransactions = useMemo(() => {
         if (!selectedDate) return [];
         return transactions.filter(t => t.date.startsWith(selectedDate));
     }, [transactions, selectedDate]);
 
-    // Calculate totals for a date
     const getDateTotals = useCallback((day: number) => {
         const dayTransactions = getTransactionsForDate(day);
         const income = dayTransactions
@@ -164,7 +160,7 @@ export default function CalendarScreen() {
         };
     };
 
-    const renderDay = ({ item: day, index }: { item: number | null; index: number }) => {
+    const renderDay = ({ item: day }: { item: number | null; index: number }) => {
         if (day === null) {
             return <View style={styles.dayCell} />;
         }
@@ -178,16 +174,17 @@ export default function CalendarScreen() {
             <TouchableOpacity
                 style={[
                     styles.dayCell,
-                    today && { borderColor: colors.tint, borderWidth: 1 },
-                    selected && { backgroundColor: colors.tint },
+                    today && !selected && [styles.todayCell, { borderColor: colors.tint }],
+                    selected && [styles.selectedCell, { backgroundColor: colors.tint }],
                 ]}
                 onPress={() => handleDayPress(day)}
+                activeOpacity={0.6}
             >
                 <Text
                     style={[
                         styles.dayNumber,
                         { color: selected ? '#FFFFFF' : colors.text },
-                        today && !selected && { color: colors.tint },
+                        today && !selected && { color: colors.tint, fontFamily: 'Outfit_600SemiBold' },
                     ]}
                 >
                     {day}
@@ -208,19 +205,20 @@ export default function CalendarScreen() {
 
     const renderTransaction = ({ item }: { item: Transaction }) => {
         const category = getCategoryById(item.category_id);
+        const isIncome = item.type === 'income';
+
         return (
-            <TouchableOpacity
-                style={[styles.transactionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            <View
+                style={[styles.transactionItem, { borderBottomColor: colors.border }]}
             >
-                <View style={[
-                    styles.iconContainer,
-                    { backgroundColor: item.type === 'income' ? colors.income + '15' : colors.expense + '15' }
-                ]}>
-                    <Ionicons
-                        name={category.icon as any || (item.type === 'income' ? 'trending-up' : 'trending-down')}
-                        size={22}
-                        color={item.type === 'income' ? colors.income : colors.expense}
-                    />
+                <View style={[styles.txIconContainer, {
+                    backgroundColor: isIncome ? colors.income + '10' : colors.expense + '10'
+                }]}>
+                    {isIncome ? (
+                        <ArrowUp size={16} color={colors.income} weight="light" />
+                    ) : (
+                        <ArrowDown size={16} color={colors.expense} weight="light" />
+                    )}
                 </View>
                 <View style={styles.transactionContent}>
                     <Text style={[styles.transactionName, { color: colors.text }]}>{item.description}</Text>
@@ -230,32 +228,74 @@ export default function CalendarScreen() {
                 </View>
                 <Text style={[
                     styles.transactionAmount,
-                    { color: item.type === 'income' ? colors.income : colors.expense }
+                    { color: isIncome ? colors.income : colors.expense }
                 ]}>
                     {formatAmount(item.amount, item.type)}
                 </Text>
-            </TouchableOpacity>
+            </View>
         );
     };
 
+    // Monthly summary
+    const monthlyIncome = transactions
+        .filter(t => {
+            const d = new Date(t.date);
+            return d.getFullYear() === currentDate.getFullYear() &&
+                d.getMonth() === currentDate.getMonth() &&
+                t.type === 'income';
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const monthlyExpense = transactions
+        .filter(t => {
+            const d = new Date(t.date);
+            return d.getFullYear() === currentDate.getFullYear() &&
+                d.getMonth() === currentDate.getMonth() &&
+                t.type === 'expense';
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-                <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
-                    <Ionicons name="chevron-back" size={24} color={colors.text} />
-                </TouchableOpacity>
-                <Text style={[styles.headerText, { color: colors.text }]}>
-                    {MONTHS_TR[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </Text>
-                <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
-                    <Ionicons name="chevron-forward" size={24} color={colors.text} />
-                </TouchableOpacity>
-            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View style={styles.headerSection}>
+                    <Text style={[styles.pageTitle, { color: colors.text }]}>Takvim</Text>
+                </View>
 
-            <ScrollView>
+                {/* Month Nav */}
+                <View style={styles.monthNav}>
+                    <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
+                        <CaretLeft size={20} color={colors.text} weight="regular" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={goToToday}>
+                        <Text style={[styles.monthText, { color: colors.text }]}>
+                            {MONTHS_TR[currentDate.getMonth()]} {currentDate.getFullYear()}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+                        <CaretRight size={20} color={colors.text} weight="regular" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Monthly Summary */}
+                <View style={styles.monthSummary}>
+                    <View style={[styles.monthSummaryItem, { backgroundColor: colors.surface }]}>
+                        <Text style={[styles.monthSummaryLabel, { color: colors.textSecondary }]}>Gelir</Text>
+                        <Text style={[styles.monthSummaryAmount, { color: colors.income }]}>
+                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(monthlyIncome)}
+                        </Text>
+                    </View>
+                    <View style={[styles.monthSummaryItem, { backgroundColor: colors.surface }]}>
+                        <Text style={[styles.monthSummaryLabel, { color: colors.textSecondary }]}>Gider</Text>
+                        <Text style={[styles.monthSummaryAmount, { color: colors.expense }]}>
+                            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(monthlyExpense)}
+                        </Text>
+                    </View>
+                </View>
+
                 {/* Calendar Grid */}
-                <View style={styles.calendar}>
+                <View style={[styles.calendar, { backgroundColor: colors.surface }]}>
                     {/* Day names */}
                     <View style={styles.weekRow}>
                         {DAYS_TR.map((day) => (
@@ -275,15 +315,6 @@ export default function CalendarScreen() {
                         numColumns={7}
                         scrollEnabled={false}
                     />
-
-                    {/* Today button */}
-                    <TouchableOpacity
-                        style={[styles.todayButton, { backgroundColor: colors.tint + '15', borderColor: colors.tint }]}
-                        onPress={goToToday}
-                    >
-                        <Ionicons name="today" size={18} color={colors.tint} />
-                        <Text style={[styles.todayButtonText, { color: colors.tint }]}>Bugüne Git</Text>
-                    </TouchableOpacity>
                 </View>
 
                 {/* Transactions for selected date */}
@@ -293,7 +324,7 @@ export default function CalendarScreen() {
                             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('tr-TR', {
                                 day: 'numeric',
                                 month: 'long',
-                                year: 'numeric'
+                                weekday: 'long',
                             })}
                         </Text>
                         {selectedDateTransactions.length > 0 ? (
@@ -305,7 +336,7 @@ export default function CalendarScreen() {
                             />
                         ) : (
                             <View style={styles.emptyState}>
-                                <Ionicons name="calendar-outline" size={48} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                                <CalendarBlank size={40} color={colors.textSecondary} weight="light" />
                                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                                     Bu tarihte işlem yok
                                 </Text>
@@ -313,6 +344,8 @@ export default function CalendarScreen() {
                         )}
                     </View>
                 )}
+
+                <View style={{ height: 100 }} />
             </ScrollView>
 
             <FAB onPress={handleAddTransaction} />
@@ -324,42 +357,88 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
+    headerSection: {
+        paddingHorizontal: 20,
+        paddingTop: 8,
+    },
+    pageTitle: {
+        fontSize: 28,
+        fontFamily: 'DMSerifDisplay_400Regular',
+    },
+    monthNav: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
     },
     navButton: {
-        padding: 8,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    headerText: {
+    monthText: {
         fontSize: 17,
-        fontWeight: '600',
+        fontFamily: 'Outfit_600SemiBold',
+    },
+    monthSummary: {
+        flexDirection: 'row',
+        gap: 10,
+        paddingHorizontal: 20,
+        marginBottom: 16,
+    },
+    monthSummaryItem: {
+        flex: 1,
+        padding: 14,
+        borderRadius: 14,
+        alignItems: 'center',
+        gap: 4,
+    },
+    monthSummaryLabel: {
+        fontSize: 11,
+        fontFamily: 'Outfit_500Medium',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+    },
+    monthSummaryAmount: {
+        fontSize: 16,
+        fontFamily: 'Outfit_600SemiBold',
+        letterSpacing: -0.3,
     },
     calendar: {
-        padding: 16,
+        marginHorizontal: 16,
+        borderRadius: 16,
+        padding: 4,
     },
     weekRow: {
         flexDirection: 'row',
-        marginBottom: 8,
+        marginBottom: 4,
+        justifyContent: 'space-between',
     },
     dayCell: {
-        width: '14.28%',
+        width: (Dimensions.get('window').width - 32 - 24) / 7, // (screen - margin - padding) / 7
         aspectRatio: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 8,
+        borderRadius: 12,
+        margin: 1,
+    },
+    todayCell: {
+        borderWidth: 1.5,
+    },
+    selectedCell: {
+        borderRadius: 12,
     },
     dayName: {
-        fontSize: 12,
-        fontWeight: '500',
+        fontSize: 11,
+        fontFamily: 'Outfit_500Medium',
+        letterSpacing: 0.5,
     },
     dayNumber: {
-        fontSize: 15,
-        fontWeight: '500',
+        fontSize: 14,
+        fontFamily: 'Outfit_500Medium',
     },
     indicators: {
         flexDirection: 'row',
@@ -371,43 +450,25 @@ const styles = StyleSheet.create({
         height: 4,
         borderRadius: 2,
     },
-    todayButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        borderWidth: 1,
-        marginTop: 16,
-        alignSelf: 'center',
-    },
-    todayButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
     transactionsSection: {
-        padding: 16,
-        paddingTop: 8,
+        padding: 20,
+        paddingTop: 16,
     },
     sectionTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'Outfit_600SemiBold',
         marginBottom: 12,
     },
     transactionItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        marginBottom: 8,
+        paddingVertical: 12,
+        borderBottomWidth: StyleSheet.hairlineWidth,
     },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
+    txIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -416,23 +477,25 @@ const styles = StyleSheet.create({
         marginLeft: 12,
     },
     transactionName: {
-        fontSize: 15,
-        fontWeight: '500',
+        fontSize: 14,
+        fontFamily: 'Outfit_500Medium',
     },
     transactionCategory: {
-        fontSize: 13,
+        fontSize: 12,
+        fontFamily: 'Outfit_400Regular',
         marginTop: 2,
     },
     transactionAmount: {
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: 14,
+        fontFamily: 'Outfit_600SemiBold',
     },
     emptyState: {
         alignItems: 'center',
         paddingVertical: 32,
+        gap: 8,
     },
     emptyText: {
-        fontSize: 14,
-        marginTop: 12,
+        fontSize: 13,
+        fontFamily: 'Outfit_400Regular',
     },
 });

@@ -9,6 +9,9 @@ import {
     TextInput,
     Alert,
     RefreshControl,
+    KeyboardAvoidingView,
+    Platform,
+    StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -241,6 +244,7 @@ export default function AccountDetailScreen() {
                 transparent
                 animationType="fade"
                 onRequestClose={() => setShowSettings(false)}
+                statusBarTranslucent
             >
                 <TouchableOpacity
                     style={styles.modalOverlay}
@@ -294,55 +298,62 @@ export default function AccountDetailScreen() {
                 transparent
                 animationType="fade"
                 onRequestClose={() => setShowEditName(false)}
+                statusBarTranslucent
             >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setShowEditName(false)}
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0)}
+                    style={{ flex: 1 }}
                 >
-                    <View
-                        style={[styles.modalContent, { backgroundColor: colors.surface }]}
-                        onStartShouldSetResponder={() => true}
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowEditName(false)}
                     >
-                        <Text style={[styles.modalTitle, { color: colors.text }]}>Hesap Adını Değiştir</Text>
+                        <View
+                            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+                            onStartShouldSetResponder={() => true}
+                        >
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>Hesap Adını Değiştir</Text>
 
-                        <TextInput
-                            style={[
-                                styles.editInput,
-                                {
-                                    backgroundColor: colors.background,
-                                    color: colors.text,
-                                    borderColor: colors.border
-                                }
-                            ]}
-                            value={editName}
-                            onChangeText={setEditName}
-                            placeholder="Hesap adı"
-                            placeholderTextColor={colors.textSecondary}
-                            autoFocus
-                        />
+                            <TextInput
+                                style={[
+                                    styles.editInput,
+                                    {
+                                        backgroundColor: colors.background,
+                                        color: colors.text,
+                                        borderColor: colors.border
+                                    }
+                                ]}
+                                value={editName}
+                                onChangeText={setEditName}
+                                placeholder="Hesap adı"
+                                placeholderTextColor={colors.textSecondary}
+                                autoFocus
+                            />
 
-                        <View style={styles.editButtonsRow}>
-                            <TouchableOpacity
-                                style={[styles.editButton, { borderColor: colors.border }]}
-                                onPress={() => setShowEditName(false)}
-                            >
-                                <Text style={[styles.editButtonText, { color: colors.textSecondary }]}>
-                                    İptal
-                                </Text>
-                            </TouchableOpacity>
+                            <View style={styles.editButtonsRow}>
+                                <TouchableOpacity
+                                    style={[styles.editButton, { borderColor: colors.border }]}
+                                    onPress={() => setShowEditName(false)}
+                                >
+                                    <Text style={[styles.editButtonText, { color: colors.textSecondary }]}>
+                                        İptal
+                                    </Text>
+                                </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={[styles.editButton, { backgroundColor: colors.tint }]}
-                                onPress={handleRename}
-                            >
-                                <Text style={[styles.editButtonText, { color: '#FFFFFF' }]}>
-                                    Kaydet
-                                </Text>
-                            </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.editButton, { backgroundColor: colors.tint }]}
+                                    onPress={handleRename}
+                                >
+                                    <Text style={[styles.editButtonText, { color: '#FFFFFF' }]}>
+                                        Kaydet
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                </KeyboardAvoidingView>
             </Modal>
         </SafeAreaView>
     );

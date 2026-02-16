@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Transaction, TransactionInput, Category, Account, RecurringTransaction, RecurringTransactionInput, Goal, GoalInput } from '../types';
 import * as Crypto from 'expo-crypto';
+import { NotificationService } from '../services/notificationService';
 
 // In-memory storage for web
 let memoryStorage: {
@@ -174,7 +175,16 @@ export async function addTransaction(input: TransactionInput): Promise<Transacti
         calendar_event_id: null,
         synced: false,
         created_at,
+        notification_id: null,
+        reminder_enabled: input.reminder_enabled || false,
     };
+
+    if (input.reminder_enabled) {
+        const notifId = await NotificationService.scheduleTransactionReminder(transaction);
+        if (notifId) {
+            transaction.notification_id = notifId;
+        }
+    }
 
     memoryStorage.transactions.push(transaction);
 
@@ -253,6 +263,10 @@ export async function deleteTransaction(id: string): Promise<void> {
 
     if (transactionDate <= today) {
         updateAccountBalanceHelper(transaction.account_id, -transaction.amount, transaction.type);
+    }
+
+    if (transaction.notification_id) {
+        await NotificationService.cancelNotification(transaction.notification_id);
     }
 
     memoryStorage.transactions.splice(index, 1);
@@ -396,7 +410,16 @@ export async function addRecurringTransaction(input: RecurringTransactionInput):
         next_date: input.next_date,
         is_active: true,
         created_at,
+        notification_id: null,
+        reminder_enabled: input.reminder_enabled || false,
     };
+
+    if (input.reminder_enabled) {
+        const notifId = await NotificationService.scheduleRecurringReminder(recurring);
+        if (notifId) {
+            recurring.notification_id = notifId;
+        }
+    }
 
     if (!memoryStorage.recurringTransactions) {
         memoryStorage.recurringTransactions = [];
@@ -424,6 +447,12 @@ export async function updateRecurringTransaction(
 export async function deleteRecurringTransaction(id: string): Promise<void> {
     await initDatabase();
     if (!memoryStorage.recurringTransactions) return;
+
+    const recurring = memoryStorage.recurringTransactions.find(r => r.id === id);
+    if (recurring?.notification_id) {
+        await NotificationService.cancelNotification(recurring.notification_id);
+    }
+
     memoryStorage.recurringTransactions = memoryStorage.recurringTransactions.filter(r => r.id !== id);
     await saveToStorage();
 }

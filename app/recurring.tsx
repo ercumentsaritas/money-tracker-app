@@ -11,6 +11,10 @@ import {
     ScrollView,
     TouchableWithoutFeedback,
     Keyboard,
+    Switch,
+    KeyboardAvoidingView,
+    Platform,
+    StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
@@ -47,7 +51,9 @@ export default function RecurringScreen() {
     const [frequency, setFrequency] = useState<Frequency>('monthly');
     const [dayOfMonth, setDayOfMonth] = useState<number>(1); // Default to 1st of month
     const [selectedCategoryId, setSelectedCategoryId] = useState('');
+
     const [selectedAccountId, setSelectedAccountId] = useState('');
+    const [reminderEnabled, setReminderEnabled] = useState(false);
 
     const loadData = useCallback(async () => {
         await initDatabase();
@@ -75,6 +81,7 @@ export default function RecurringScreen() {
         setDayOfMonth(1);
         setSelectedCategoryId('');
         setSelectedAccountId('');
+        setReminderEnabled(false);
     };
 
     const handleAddRecurring = async () => {
@@ -123,6 +130,7 @@ export default function RecurringScreen() {
                 frequency,
                 day_of_month: (frequency === 'monthly' || frequency === 'yearly') ? dayOfMonth : undefined,
                 next_date: nextDate.toISOString(),
+                reminder_enabled: reminderEnabled,
             };
             await addRecurringTransaction(input);
             setShowAddModal(false);
@@ -258,9 +266,13 @@ export default function RecurringScreen() {
             />
 
             {/* Add Modal */}
-            <Modal visible={showAddModal} animationType="slide" transparent>
+            <Modal visible={showAddModal} animationType="slide" transparent statusBarTranslucent onRequestClose={() => setShowAddModal(false)}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                    <View style={styles.modalOverlay}>
+                    <KeyboardAvoidingView
+                        style={styles.modalOverlay}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0)}
+                    >
                         <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
                             <View style={styles.modalHeader}>
                                 <Text style={[styles.modalTitle, { color: colors.text }]}>Yeni Tekrarlayan İşlem</Text>
@@ -400,6 +412,17 @@ export default function RecurringScreen() {
                                     ))}
                                 </View>
 
+                                {/* Reminder Switch */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 8 }}>
+                                    <Text style={[styles.label, { color: colors.textSecondary, marginTop: 0, marginBottom: 0 }]}>Hatırlatıcı (1 Gün Önce)</Text>
+                                    <Switch
+                                        value={reminderEnabled}
+                                        onValueChange={setReminderEnabled}
+                                        trackColor={{ false: colors.border, true: colors.tint }}
+                                        thumbColor={'#fff'}
+                                    />
+                                </View>
+
                                 {/* Submit Button */}
                                 <TouchableOpacity
                                     style={[styles.submitButton, { backgroundColor: colors.tint }]}
@@ -409,7 +432,7 @@ export default function RecurringScreen() {
                                 </TouchableOpacity>
                             </ScrollView>
                         </View>
-                    </View>
+                    </KeyboardAvoidingView>
                 </TouchableWithoutFeedback>
             </Modal>
 

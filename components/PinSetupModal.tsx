@@ -7,6 +7,7 @@ import {
     Modal,
     Vibration,
     Platform,
+    StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -189,7 +190,7 @@ export function PinSetupModal({
         >
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 {/* Header */}
-                <View style={styles.header}>
+                <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 16 : 60 }]}>
                     <TouchableOpacity
                         style={[styles.headerButton, { backgroundColor: colors.surface }]}
                         onPress={handleBack}

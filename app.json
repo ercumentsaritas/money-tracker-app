@@ -15,9 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.ercuumeent.incometrackerapp",
       "infoPlist": {
         "NSCalendarsUsageDescription": "Bu uygulama, gelir ve gider işlemlerinizi cihaz takviminizle senkronize etmek için takvim erişimi ister.",
-        "NSRemindersUsageDescription": "Bu uygulama, hatırlatıcı oluşturabilmek için erişim ister."
+        "NSRemindersUsageDescription": "Bu uygulama, hatırlatıcı oluşturabilmek için erişim ister.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -26,11 +28,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "Ycom.ercuumeent.incometrackerapp",
+      "predictiveBackGestureEnabled": true,
+      "package": "com.ercuumeent.incometrackerapp",
       "permissions": [
         "READ_CALENDAR",
-        "WRITE_CALENDAR"
+        "WRITE_CALENDAR",
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
       ]
     },
     "web": {
@@ -46,7 +50,8 @@
         {
           "calendarPermission": "Bu uygulama, gelir ve gider işlemlerinizi cihaz takviminizle senkronize etmek için takvim erişimi ister."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

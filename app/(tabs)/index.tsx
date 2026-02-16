@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { StyleSheet, View, Text, FlatList, RefreshControl, TouchableOpacity, Modal, TextInput, Alert, Keyboard } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { List, Bell, Flag, Wallet, Receipt, Plus, Info } from 'phosphor-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -10,9 +10,11 @@ import { TransactionItem } from '@/components/TransactionItem';
 import { AccountCard } from '@/components/AccountCard';
 import { GoalCard } from '@/components/GoalCard';
 import { FAB } from '@/components/FAB';
+import { SideDrawer } from '@/components/SideDrawer';
 import { initDatabase, getTransactionsByMonth, getMonthlyStats, getAllCategories, getAllAccounts, getActiveGoals, addGoal } from '@/database';
 import { Transaction, Category, Account, Goal, GoalInput } from '@/types';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -27,9 +29,12 @@ export default function HomeScreen() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [stats, setStats] = useState({ totalIncome: 0, totalExpense: 0, balance: 0 });
+  const [totalDebt, setTotalDebt] = useState(0);
+  const [monthlyDebtPayment, setMonthlyDebtPayment] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [addingGoal, setAddingGoal] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   // Add Goal Modal state
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
@@ -66,6 +71,14 @@ export default function HomeScreen() {
       setCategories(cats);
       setAccounts(accs);
       setGoals(activeGoals);
+
+      // Load debt info from AsyncStorage
+      const [savedDebt, savedMonthly] = await Promise.all([
+        AsyncStorage.getItem('user_total_debt'),
+        AsyncStorage.getItem('user_monthly_debt_payment'),
+      ]);
+      setTotalDebt(savedDebt ? parseFloat(savedDebt) : 0);
+      setMonthlyDebtPayment(savedMonthly ? parseFloat(savedMonthly) : 0);
     } catch (error) {
       console.error('Failed to load data:', error);
     }
@@ -134,20 +147,27 @@ export default function HomeScreen() {
     }
   };
 
+  const renderHeader = () => (
+    <View style={[styles.headerBar, { paddingTop: 12 }]}>
+      <TouchableOpacity style={styles.headerIcon} onPress={() => setDrawerVisible(true)}>
+        <List size={22} color={colors.text} weight="light" />
+      </TouchableOpacity>
+      <Text style={[styles.headerTitle, { color: colors.text }]}>{monthName}</Text>
+      <TouchableOpacity style={styles.headerIcon}>
+        <Bell size={22} color={colors.text} weight="light" />
+      </TouchableOpacity>
+    </View>
+  );
+
   const renderGoalsSection = () => (
     <>
       <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-          <View style={[styles.sectionIcon, { backgroundColor: colors.tint + '15' }]}>
-            <Ionicons name="flag" size={16} color={colors.tint} />
-          </View>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Hedefler</Text>
-        </View>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Hedefler</Text>
         <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.tint + '15' }]}
+          style={[styles.addButton, { backgroundColor: colors.tint + '12' }]}
           onPress={() => setShowAddGoalModal(true)}
         >
-          <Ionicons name="add" size={18} color={colors.tint} />
+          <Plus size={16} color={colors.tint} weight="regular" />
         </TouchableOpacity>
       </View>
       {goals.length > 0 ? (
@@ -159,8 +179,8 @@ export default function HomeScreen() {
           style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => setShowAddGoalModal(true)}
         >
-          <View style={[styles.emptyIconContainer, { backgroundColor: colors.tint + '10' }]}>
-            <Ionicons name="flag-outline" size={28} color={colors.tint} />
+          <View style={[styles.emptyIconContainer, { backgroundColor: colors.tint + '08' }]}>
+            <Flag size={24} color={colors.tint} weight="light" />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>
             Henüz hedef yok
@@ -168,10 +188,6 @@ export default function HomeScreen() {
           <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
             Finansal hedeflerinizi takip edin
           </Text>
-          <View style={[styles.emptyButton, { backgroundColor: colors.tint }]}>
-            <Ionicons name="add" size={16} color="#FFFFFF" />
-            <Text style={styles.emptyButtonText}>Hedef Ekle</Text>
-          </View>
         </TouchableOpacity>
       )}
     </>
@@ -187,12 +203,16 @@ export default function HomeScreen() {
         }
         ListHeaderComponent={
           <>
+            {renderHeader()}
+
             <BalanceCard
               totalIncome={stats.totalIncome}
               totalExpense={stats.totalExpense}
               balance={stats.balance}
               month={monthName}
               accountBalance={accounts.find(a => a.name.toLowerCase().includes('nakit'))?.balance ?? 0}
+              totalDebt={totalDebt}
+              monthlyDebtPayment={monthlyDebtPayment}
             />
 
             {/* Goals Section */}
@@ -201,14 +221,9 @@ export default function HomeScreen() {
             {accounts.length > 0 && (
               <>
                 <View style={styles.sectionHeader}>
-                  <View style={styles.sectionTitleRow}>
-                    <View style={[styles.sectionIcon, { backgroundColor: colors.income + '15' }]}>
-                      <Ionicons name="wallet" size={16} color={colors.income} />
-                    </View>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesaplar</Text>
-                  </View>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesaplar</Text>
                 </View>
-                <View style={styles.accountsContainer}>
+                <View style={[styles.listSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   {accounts.map((account) => (
                     <AccountCard
                       key={account.id}
@@ -221,12 +236,7 @@ export default function HomeScreen() {
             )}
             {transactions.length > 0 && (
               <View style={styles.sectionHeader}>
-                <View style={styles.sectionTitleRow}>
-                  <View style={[styles.sectionIcon, { backgroundColor: colors.tint + '15' }]}>
-                    <Ionicons name="receipt" size={16} color={colors.tint} />
-                  </View>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Son İşlemler</Text>
-                </View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Son İşlemler</Text>
               </View>
             )}
           </>
@@ -239,6 +249,7 @@ export default function HomeScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
+            <Receipt size={32} color={colors.textSecondary} weight="light" />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
               Henüz işlem yok
             </Text>
@@ -250,9 +261,10 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }}
       />
       <FAB onPress={handleAddTransaction} />
+      <SideDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
 
       {/* Add Goal Modal */}
-      <Modal visible={showAddGoalModal} transparent animationType="fade">
+      <Modal visible={showAddGoalModal} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setShowAddGoalModal(false)}>
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
@@ -300,7 +312,7 @@ export default function HomeScreen() {
 
             {goalAmount && goalMonths && (
               <View style={[styles.monthlyInfo, { backgroundColor: colors.tint + '10' }]}>
-                <Ionicons name="information-circle-outline" size={18} color={colors.tint} />
+                <Info size={18} color={colors.tint} weight="regular" />
                 <Text style={[styles.monthlyInfoText, { color: colors.tint }]}>
                   Aylık ~{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(Math.ceil(parseFloat(goalAmount || '0') / parseInt(goalMonths || '12')))} yatırmanız gerekecek
                 </Text>
@@ -336,183 +348,156 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  list: {
-    paddingBottom: 120,
+  // Minimal Header
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 8,
   },
-  // Modern section header styles
+  headerIcon: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 14,
+    fontFamily: 'Outfit_500Medium',
+    letterSpacing: 0.3,
+    textTransform: 'capitalize',
+  },
+  // Section headers - minimal
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: 20,
+    paddingHorizontal: 20,
     marginTop: 28,
-    marginBottom: 16,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  sectionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontSize: 13,
+    fontFamily: 'Outfit_600SemiBold',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
   addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Empty state styles
+  // List section container
+  listSection: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  // Empty states
   empty: {
     alignItems: 'center',
-    paddingVertical: 64,
+    paddingVertical: 48,
     paddingHorizontal: 32,
+    gap: 8,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 15,
+    fontFamily: 'Outfit_500Medium',
+    marginTop: 4,
   },
   emptyCard: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 32,
+    padding: 28,
     marginHorizontal: 16,
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
     borderStyle: 'dashed',
-    gap: 12,
-  },
-  emptyIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  emptyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginTop: 8,
-  },
-  emptyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  accountsContainer: {
-    paddingHorizontal: 16,
     gap: 10,
   },
-  // Legacy styles (keeping for compatibility)
-  goalHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginTop: 28,
-    marginBottom: 8,
-  },
-  emptyGoalCard: {
-    alignItems: 'center',
+  emptyIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
-    padding: 24,
-    marginHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: 'dashed',
+    alignItems: 'center',
+    marginBottom: 2,
   },
-  emptyGoalText: {
-    fontSize: 14,
-    marginTop: 8,
+  emptyTitle: {
+    fontSize: 16,
+    fontFamily: 'Outfit_600SemiBold',
   },
-  emptyGoalSubtext: {
+  emptySubtext: {
     fontSize: 13,
-    fontWeight: '500',
-    marginTop: 4,
+    fontFamily: 'Outfit_400Regular',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    borderRadius: 28,
-    padding: 28,
-    width: 320,
+    borderRadius: 24,
+    padding: 24,
+    width: '85%',
+    maxWidth: 340,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 20,
+    fontFamily: 'Outfit_700Bold',
+    marginBottom: 16,
     textAlign: 'center',
   },
   label: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginTop: 16,
+    fontSize: 11,
+    fontFamily: 'Outfit_500Medium',
+    marginBottom: 6,
+    marginTop: 14,
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 1,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    fontSize: 16,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: 'Outfit_400Regular',
   },
   monthlyInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    padding: 14,
-    borderRadius: 14,
-    marginTop: 20,
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 16,
   },
   monthlyInfoText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12,
+    fontFamily: 'Outfit_500Medium',
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
+    gap: 10,
+    marginTop: 20,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 16,
-    borderRadius: 14,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
   },
   modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontFamily: 'Outfit_600SemiBold',
   },
 });

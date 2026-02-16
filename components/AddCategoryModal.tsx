@@ -9,6 +9,7 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -77,10 +78,12 @@ export function AddCategoryModal({ visible, onClose, onCategoryAdded, type }: Ad
             animationType="slide"
             transparent
             onRequestClose={handleClose}
+            statusBarTranslucent
         >
             <KeyboardAvoidingView
                 style={styles.overlay}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0)}
             >
                 <View style={[styles.container, { backgroundColor: colors.surface }]}>
                     <View style={[styles.header, { borderBottomColor: colors.border }]}>

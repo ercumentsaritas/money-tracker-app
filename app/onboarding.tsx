@@ -4,7 +4,6 @@ import {
     View,
     Text,
     TouchableOpacity,
-    SafeAreaView,
     TextInput,
     ScrollView,
     Dimensions,
@@ -12,42 +11,54 @@ import {
     TouchableWithoutFeedback,
     KeyboardAvoidingView,
     Platform,
+    StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+    Sun, Moon, Wallet, Briefcase, Calendar,
+    TrendUp, TrendDown, ArrowRight, ArrowLeft,
+    House, PlusCircle, ListBullets, Sparkle, Gear, Info,
+} from 'phosphor-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { Colors } from '@/constants/Colors';
 import { updateAccountBalance, getAllAccounts, initDatabase, addRecurringTransaction, getAllCategories } from '@/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 type Step = 'theme' | 'balance' | 'income' | 'incomeDay' | 'extraIncome' | 'expenses' | 'expensesDays' | 'tour';
 
-const TOUR_STEPS = [
+const TOUR_FEATURES = [
     {
-        icon: 'home-outline' as const,
+        icon: House,
         title: 'Ana Sayfa',
-        description: 'Aylık gelir, gider ve bakiyenizi görün. Son işlemlerinizi takip edin.',
+        description: 'Aylık gelir, gider ve bakiyenizi tek bakışta görün.',
+        color: '#5B6F5B',
     },
     {
-        icon: 'add-circle-outline' as const,
+        icon: PlusCircle,
         title: 'İşlem Ekleme',
-        description: 'Sağ alttaki + butonu ile yeni gelir veya gider ekleyin.',
+        description: 'Sağ alttaki + butonu ile hızlıca gelir veya gider ekleyin.',
+        color: '#6B9F6B',
     },
     {
-        icon: 'list-outline' as const,
+        icon: ListBullets,
         title: 'İşlemler',
-        description: 'Tüm işlemlerinizi listeleyin, filtreleyin ve silin.',
+        description: 'Tüm işlemlerinizi listeleyin, filtreleyin ve yönetin.',
+        color: '#7BA67B',
     },
     {
-        icon: 'sparkles-outline' as const,
+        icon: Sparkle,
         title: 'AI Asistan',
         description: 'Finansal durumunuz hakkında sorular sorun, öneriler alın.',
+        color: '#8BB08B',
     },
     {
-        icon: 'settings-outline' as const,
+        icon: Gear,
         title: 'Ayarlar',
         description: 'Hesapları, kategorileri yönetin ve temayı değiştirin.',
+        color: '#9BBB9B',
     },
 ];
 
@@ -102,7 +113,6 @@ export default function OnboardingScreen() {
         } else if (currentStep === 'balance') {
             setCurrentStep('income');
         } else if (currentStep === 'income') {
-            // Only go to incomeDay if main income is entered
             if (mainIncome && parseFloat(mainIncome) > 0) {
                 setCurrentStep('incomeDay');
             } else {
@@ -113,7 +123,6 @@ export default function OnboardingScreen() {
         } else if (currentStep === 'extraIncome') {
             setCurrentStep('expenses');
         } else if (currentStep === 'expenses') {
-            // Only go to expensesDays if rent or bills are entered
             if ((rentExpense && parseFloat(rentExpense) > 0) || (billExpense && parseFloat(billExpense) > 0)) {
                 setCurrentStep('expensesDays');
             } else {
@@ -124,12 +133,8 @@ export default function OnboardingScreen() {
             await saveData();
             setCurrentStep('tour');
         } else if (currentStep === 'tour') {
-            if (tourIndex < TOUR_STEPS.length - 1) {
-                setTourIndex(tourIndex + 1);
-            } else {
-                setOnboarded();
-                router.replace('/(tabs)');
-            }
+            setOnboarded();
+            router.replace('/(tabs)');
         }
     };
 
@@ -149,14 +154,20 @@ export default function OnboardingScreen() {
             }
             console.log('[Onboarding] Using account:', cashAccount);
 
-            // 1. Update Balance (only the initial balance, not affected by recurring)
             if (balance) {
                 const initialBalance = parseFloat(balance.replace(/[^0-9.-]/g, '')) || 0;
                 console.log('[Onboarding] Setting balance to:', initialBalance);
                 await updateAccountBalance(cashAccount.id, initialBalance);
             }
 
-            // Helper to calculate next occurrence date
+            // Save debt info to AsyncStorage
+            const debtAmount = debt ? parseFloat(debt.replace(/[^0-9.-]/g, '')) || 0 : 0;
+            await AsyncStorage.setItem('user_total_debt', debtAmount.toString());
+
+            // Save monthly income for debt ratio calculation
+            const monthlyIncome = mainIncome ? parseFloat(mainIncome.replace(/[^0-9.-]/g, '')) || 0 : 0;
+            await AsyncStorage.setItem('user_monthly_income', monthlyIncome.toString());
+
             const getNextDate = (dayOfMonth: number) => {
                 const now = new Date();
                 let nextDate = new Date(now.getFullYear(), now.getMonth(), dayOfMonth);
@@ -166,7 +177,6 @@ export default function OnboardingScreen() {
                 return nextDate.toISOString();
             };
 
-            // 2. Add Recurring Income - Main Income
             if (mainIncome) {
                 const amount = parseFloat(mainIncome.replace(/[^0-9.-]/g, '')) || 0;
                 if (amount > 0) {
@@ -184,7 +194,6 @@ export default function OnboardingScreen() {
                 }
             }
 
-            // 3. Add Recurring Expenses - Rent
             if (rentExpense) {
                 const amount = parseFloat(rentExpense.replace(/[^0-9.-]/g, '')) || 0;
                 if (amount > 0) {
@@ -202,7 +211,6 @@ export default function OnboardingScreen() {
                 }
             }
 
-            // 4. Add Recurring Expenses - Bills
             if (billExpense) {
                 const amount = parseFloat(billExpense.replace(/[^0-9.-]/g, '')) || 0;
                 if (amount > 0) {
@@ -224,7 +232,6 @@ export default function OnboardingScreen() {
         } catch (error) {
             console.error('[Onboarding] saveData error:', error);
         }
-        // Note: extraIncome, kitchenExpense, otherExpense are not recurring - they're variable
     };
 
     const handleBack = () => {
@@ -240,8 +247,7 @@ export default function OnboardingScreen() {
         }
         else if (currentStep === 'expenses') setCurrentStep('extraIncome');
         else if (currentStep === 'expensesDays') setCurrentStep('expenses');
-        else if (currentStep === 'tour' && tourIndex > 0) setTourIndex(tourIndex - 1);
-        else if (currentStep === 'tour' && tourIndex === 0) {
+        else if (currentStep === 'tour') {
             if ((rentExpense && parseFloat(rentExpense) > 0) || (billExpense && parseFloat(billExpense) > 0)) {
                 setCurrentStep('expensesDays');
             } else {
@@ -253,6 +259,11 @@ export default function OnboardingScreen() {
     const handleSkip = () => {
         setOnboarded();
         router.replace('/(tabs)');
+    };
+
+    const getStepNumber = () => {
+        const steps: Step[] = ['theme', 'balance', 'income', 'incomeDay', 'extraIncome', 'expenses', 'expensesDays', 'tour'];
+        return steps.indexOf(currentStep) + 1;
     };
 
     const renderStepIndicator = () => {
@@ -267,7 +278,7 @@ export default function OnboardingScreen() {
                             styles.stepDot,
                             {
                                 backgroundColor: index <= currentIndex ? colors.tint : colors.border,
-                                width: index === currentIndex ? 24 : 8,
+                                width: index === currentIndex ? 28 : 8,
                             },
                         ]}
                     />
@@ -278,7 +289,13 @@ export default function OnboardingScreen() {
 
     const renderThemeStep = () => (
         <View style={styles.stepContent}>
-            <Ionicons name="color-palette-outline" size={60} color={colors.tint} />
+            <View style={[styles.iconCircle, { backgroundColor: colors.tint + '10' }]}>
+                {selectedTheme === 'light' ? (
+                    <Sun size={32} color={colors.tint} weight="light" />
+                ) : (
+                    <Moon size={32} color={colors.tint} weight="light" />
+                )}
+            </View>
             <Text style={[styles.stepTitle, { color: colors.text }]}>Tema Seç</Text>
             <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
                 Gözleriniz için en uygun temayı seçin
@@ -296,8 +313,13 @@ export default function OnboardingScreen() {
                     ]}
                     onPress={() => setSelectedTheme('light')}
                 >
-                    <Ionicons name="sunny-outline" size={28} color={Colors.light.text} />
+                    <Sun size={24} color={Colors.light.text} weight="light" />
                     <Text style={[styles.themeText, { color: Colors.light.text }]}>Açık</Text>
+                    {selectedTheme === 'light' && (
+                        <View style={[styles.checkmark, { backgroundColor: colors.tint }]}>
+                            <Text style={styles.checkmarkText}>✓</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -311,310 +333,188 @@ export default function OnboardingScreen() {
                     ]}
                     onPress={() => setSelectedTheme('dark')}
                 >
-                    <Ionicons name="moon-outline" size={28} color={Colors.dark.text} />
+                    <Moon size={24} color={Colors.dark.text} weight="light" />
                     <Text style={[styles.themeText, { color: Colors.dark.text }]}>Koyu</Text>
+                    {selectedTheme === 'dark' && (
+                        <View style={[styles.checkmark, { backgroundColor: colors.tint }]}>
+                            <Text style={styles.checkmarkText}>✓</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
         </View>
     );
 
-    const renderBalanceStep = () => (
-        <View style={styles.stepContent}>
-            <Ionicons name="wallet-outline" size={60} color={colors.tint} />
-            <Text style={[styles.stepTitle, { color: colors.text }]}>Mevcut Durumunuz</Text>
-            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                Finansal durumunuzu girin
-            </Text>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Mevcut Bakiye</Text>
-                <TextInput
-                    style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                    value={balance}
-                    onChangeText={setBalance}
-                    placeholder="₺0"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="numeric"
-                />
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Toplam Borç (varsa)</Text>
-                <TextInput
-                    style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                    value={debt}
-                    onChangeText={setDebt}
-                    placeholder="₺0"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="numeric"
-                />
-            </View>
-        </View>
-    );
-
-    const renderIncomeStep = () => (
-        <View style={styles.stepContent}>
-            <Ionicons name="briefcase-outline" size={60} color={colors.income} />
-            <Text style={[styles.stepTitle, { color: colors.text }]}>Ana Geliriniz</Text>
-            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                Aylık düzenli maaş veya ana geliriniz
-            </Text>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Aylık Maaş / Gelir</Text>
-                <TextInput
-                    style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                    value={mainIncome}
-                    onChangeText={setMainIncome}
-                    placeholder="₺0"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="numeric"
-                />
-            </View>
-        </View>
-    );
-
-    const renderIncomeDayStep = () => (
-        <View style={styles.stepContent}>
-            <Ionicons name="calendar-outline" size={60} color={colors.income} />
-            <Text style={[styles.stepTitle, { color: colors.text }]}>Maaş Günü</Text>
-            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                Maaşınız ayın hangi günü yatıyor?
-            </Text>
-
-            <View style={styles.dayPickerContainer}>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.dayPickerScroll}
-                >
-                    {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                        <TouchableOpacity
-                            key={day}
-                            style={[
-                                styles.dayButton,
-                                {
-                                    backgroundColor: mainIncomeDay === day ? colors.income : colors.surface,
-                                    borderColor: mainIncomeDay === day ? colors.income : colors.border,
-                                },
-                            ]}
-                            onPress={() => setMainIncomeDay(day)}
-                        >
-                            <Text
-                                style={[
-                                    styles.dayButtonText,
-                                    { color: mainIncomeDay === day ? '#FFFFFF' : colors.text },
-                                ]}
-                            >
-                                {day}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-
-            <View style={[styles.infoBox, { backgroundColor: colors.income + '15' }]}>
-                <Ionicons name="information-circle" size={20} color={colors.income} />
-                <Text style={[styles.infoText, { color: colors.income }]}>
-                    Her ayın {mainIncomeDay}. günü maaşınız otomatik olarak işlenecek
-                </Text>
-            </View>
-        </View>
-    );
-
-    const renderExtraIncomeStep = () => (
-        <View style={styles.stepContent}>
-            <Ionicons name="trending-up-outline" size={60} color={colors.income} />
-            <Text style={[styles.stepTitle, { color: colors.text }]}>Ek Gelirler</Text>
-            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                Varsa kira geliri, freelance vb. ek gelirler
-            </Text>
-
-            <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Aylık Ek Gelir (Opsiyonel)</Text>
-                <TextInput
-                    style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                    value={extraIncome}
-                    onChangeText={setExtraIncome}
-                    placeholder="₺0"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="numeric"
-                />
-            </View>
-        </View>
-    );
-
-    const renderExpensesStep = () => (
-        <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={styles.stepContent}>
-                <Ionicons name="trending-down-outline" size={60} color={colors.expense} />
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Gider Kalemleri</Text>
-                <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                    Aylık ortalama giderlerinizi girin
-                </Text>
-
-                <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Kira</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                        value={rentExpense}
-                        onChangeText={setRentExpense}
-                        placeholder="₺0"
-                        placeholderTextColor={colors.textSecondary}
-                        keyboardType="numeric"
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Faturalar (Elektrik, Su, İnternet)</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                        value={billExpense}
-                        onChangeText={setBillExpense}
-                        placeholder="₺0"
-                        placeholderTextColor={colors.textSecondary}
-                        keyboardType="numeric"
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Mutfak / Market</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                        value={kitchenExpense}
-                        onChangeText={setKitchenExpense}
-                        placeholder="₺0"
-                        placeholderTextColor={colors.textSecondary}
-                        keyboardType="numeric"
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Diğer (Harçlık, Eğlence vb.)</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                        value={otherExpense}
-                        onChangeText={setOtherExpense}
-                        placeholder="₺0"
-                        placeholderTextColor={colors.textSecondary}
-                        keyboardType="numeric"
-                    />
-                </View>
-            </View>
-        </ScrollView>
-    );
-
-    const renderExpensesDaysStep = () => (
-        <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={styles.stepContent}>
-                <Ionicons name="calendar-outline" size={60} color={colors.expense} />
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Ödeme Günleri</Text>
-                <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                    Kira ve faturalarınız ayın hangi günü ödeniyor?
-                </Text>
-
-                {rentExpense && parseFloat(rentExpense) > 0 && (
-                    <View style={styles.daySection}>
-                        <Text style={[styles.daySectionTitle, { color: colors.text }]}>🏠 Kira</Text>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.dayPickerScroll}
-                        >
-                            {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                                <TouchableOpacity
-                                    key={day}
-                                    style={[
-                                        styles.dayButton,
-                                        {
-                                            backgroundColor: rentDay === day ? colors.expense : colors.surface,
-                                            borderColor: rentDay === day ? colors.expense : colors.border,
-                                        },
-                                    ]}
-                                    onPress={() => setRentDay(day)}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.dayButtonText,
-                                            { color: rentDay === day ? '#FFFFFF' : colors.text },
-                                        ]}
-                                    >
-                                        {day}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                {billExpense && parseFloat(billExpense) > 0 && (
-                    <View style={styles.daySection}>
-                        <Text style={[styles.daySectionTitle, { color: colors.text }]}>💡 Faturalar</Text>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.dayPickerScroll}
-                        >
-                            {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                                <TouchableOpacity
-                                    key={day}
-                                    style={[
-                                        styles.dayButton,
-                                        {
-                                            backgroundColor: billsDay === day ? colors.expense : colors.surface,
-                                            borderColor: billsDay === day ? colors.expense : colors.border,
-                                        },
-                                    ]}
-                                    onPress={() => setBillsDay(day)}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.dayButtonText,
-                                            { color: billsDay === day ? '#FFFFFF' : colors.text },
-                                        ]}
-                                    >
-                                        {day}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                <View style={[styles.infoBox, { backgroundColor: colors.expense + '15' }]}>
-                    <Ionicons name="information-circle" size={20} color={colors.expense} />
-                    <Text style={[styles.infoText, { color: colors.expense }]}>
-                        Bu giderler tekrarlayan işlem olarak kaydedilecek
-                    </Text>
-                </View>
-            </View>
-        </ScrollView>
-    );
-
-    const renderTourStep = () => {
-        const step = TOUR_STEPS[tourIndex];
+    const renderInputStep = (icon: React.ComponentType<any>, iconColor: string, title: string, description: string, inputs: { label: string; value: string; onChange: (text: string) => void }[]) => {
+        const Icon = icon;
         return (
             <View style={styles.stepContent}>
-                <View style={[styles.tourIconContainer, { backgroundColor: colors.tint + '15' }]}>
-                    <Ionicons name={step.icon} size={48} color={colors.tint} />
+                <View style={[styles.iconCircle, { backgroundColor: iconColor + '10' }]}>
+                    <Icon size={32} color={iconColor} weight="light" />
                 </View>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>{step.title}</Text>
-                <Text style={[styles.tourDescription, { color: colors.textSecondary }]}>
-                    {step.description}
+                <Text style={[styles.stepTitle, { color: colors.text }]}>{title}</Text>
+                <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                    {description}
                 </Text>
 
-                <View style={styles.tourIndicator}>
-                    {TOUR_STEPS.map((_, index) => (
-                        <View
-                            key={index}
-                            style={[
-                                styles.tourDot,
-                                { backgroundColor: index === tourIndex ? colors.tint : colors.border },
-                            ]}
+                {inputs.map((input, index) => (
+                    <View key={index} style={styles.inputGroup}>
+                        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{input.label}</Text>
+                        <TextInput
+                            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                            value={input.value}
+                            onChangeText={input.onChange}
+                            placeholder="₺0"
+                            placeholderTextColor={colors.textSecondary}
+                            keyboardType="numeric"
                         />
-                    ))}
-                </View>
+                    </View>
+                ))}
             </View>
+        );
+    };
+
+    const renderBalanceStep = () => renderInputStep(
+        Wallet, colors.tint, 'Mevcut Durumunuz', 'Finansal durumunuzu girin',
+        [
+            { label: 'Mevcut Bakiye', value: balance, onChange: setBalance },
+            { label: 'Toplam Borç (varsa)', value: debt, onChange: setDebt },
+        ]
+    );
+
+    const renderIncomeStep = () => renderInputStep(
+        Briefcase, colors.income, 'Ana Geliriniz', 'Aylık düzenli maaş veya ana geliriniz',
+        [{ label: 'Aylık Maaş / Gelir', value: mainIncome, onChange: setMainIncome }]
+    );
+
+    const renderExtraIncomeStep = () => renderInputStep(
+        TrendUp, colors.income, 'Ek Gelirler', 'Varsa kira geliri, freelance vb. ek gelirler',
+        [{ label: 'Aylık Ek Gelir (Opsiyonel)', value: extraIncome, onChange: setExtraIncome }]
+    );
+
+    const renderDayPicker = (title: string, iconComponent: React.ComponentType<any>, iconColor: string, description: string, sections: { label: string; day: number; setDay: (d: number) => void; color: string }[]) => {
+        const Icon = iconComponent;
+        return (
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.stepContent}>
+                    <View style={[styles.iconCircle, { backgroundColor: iconColor + '10' }]}>
+                        <Icon size={32} color={iconColor} weight="light" />
+                    </View>
+                    <Text style={[styles.stepTitle, { color: colors.text }]}>{title}</Text>
+                    <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                        {description}
+                    </Text>
+
+                    {sections.map((section, index) => (
+                        <View key={index} style={styles.daySection}>
+                            <Text style={[styles.daySectionTitle, { color: colors.text }]}>{section.label}</Text>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.dayPickerScroll}
+                            >
+                                {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                                    <TouchableOpacity
+                                        key={day}
+                                        style={[
+                                            styles.dayButton,
+                                            {
+                                                backgroundColor: section.day === day ? section.color : colors.surface,
+                                                borderColor: section.day === day ? section.color : colors.border,
+                                            },
+                                        ]}
+                                        onPress={() => section.setDay(day)}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.dayButtonText,
+                                                { color: section.day === day ? '#FFFFFF' : colors.text },
+                                            ]}
+                                        >
+                                            {day}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    ))}
+
+                    <View style={[styles.infoBox, { backgroundColor: iconColor + '10' }]}>
+                        <Info size={18} color={iconColor} weight="regular" />
+                        <Text style={[styles.infoText, { color: iconColor }]}>
+                            {sections.length === 1
+                                ? `Her ayın ${sections[0].day}. günü otomatik olarak işlenecek`
+                                : 'Bu giderler tekrarlayan işlem olarak kaydedilecek'}
+                        </Text>
+                    </View>
+                </View>
+            </ScrollView>
+        );
+    };
+
+    const renderIncomeDayStep = () => renderDayPicker(
+        'Maaş Günü', Calendar, colors.income,
+        'Maaşınız ayın hangi günü yatıyor?',
+        [{ label: '💰 Maaş Günü', day: mainIncomeDay, setDay: setMainIncomeDay, color: colors.income }]
+    );
+
+    const renderExpensesStep = () => renderInputStep(
+        TrendDown, colors.expense, 'Gider Kalemleri', 'Aylık ortalama giderlerinizi girin',
+        [
+            { label: 'Kira', value: rentExpense, onChange: setRentExpense },
+            { label: 'Faturalar (Elektrik, Su, İnternet)', value: billExpense, onChange: setBillExpense },
+            { label: 'Mutfak / Market', value: kitchenExpense, onChange: setKitchenExpense },
+            { label: 'Diğer (Harçlık, Eğlence vb.)', value: otherExpense, onChange: setOtherExpense },
+        ]
+    );
+
+    const renderExpensesDaysStep = () => {
+        const sections = [];
+        if (rentExpense && parseFloat(rentExpense) > 0) {
+            sections.push({ label: '🏠 Kira', day: rentDay, setDay: setRentDay, color: colors.expense });
+        }
+        if (billExpense && parseFloat(billExpense) > 0) {
+            sections.push({ label: '💡 Faturalar', day: billsDay, setDay: setBillsDay, color: colors.expense });
+        }
+        return renderDayPicker(
+            'Ödeme Günleri', Calendar, colors.expense,
+            'Kira ve faturalarınız ayın hangi günü ödeniyor?',
+            sections
+        );
+    };
+
+    const renderTourStep = () => {
+        return (
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.stepContent}>
+                    <Text style={[styles.stepTitle, { color: colors.text }]}>Hazırsınız! 🎉</Text>
+                    <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                        İşte uygulamanın temel özellikleri
+                    </Text>
+
+                    <View style={styles.featureGrid}>
+                        {TOUR_FEATURES.map((feature, index) => {
+                            const Icon = feature.icon;
+                            return (
+                                <View
+                                    key={index}
+                                    style={[styles.featureCard, { backgroundColor: colors.surface }]}
+                                >
+                                    <View style={[styles.featureIcon, { backgroundColor: feature.color + '10' }]}>
+                                        <Icon size={22} color={feature.color} weight="light" />
+                                    </View>
+                                    <Text style={[styles.featureTitle, { color: colors.text }]}>
+                                        {feature.title}
+                                    </Text>
+                                    <Text style={[styles.featureDesc, { color: colors.textSecondary }]}>
+                                        {feature.description}
+                                    </Text>
+                                </View>
+                            );
+                        })}
+                    </View>
+                </View>
+            </ScrollView>
         );
     };
 
@@ -624,10 +524,11 @@ export default function OnboardingScreen() {
 
     return (
         <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
                 <KeyboardAvoidingView
                     style={styles.keyboardAvoid}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : StatusBar.currentHeight || 0}
                 >
                     {renderStepIndicator()}
 
@@ -637,22 +538,29 @@ export default function OnboardingScreen() {
                         {currentStep === 'income' && renderIncomeStep()}
                         {currentStep === 'incomeDay' && renderIncomeDayStep()}
                         {currentStep === 'extraIncome' && renderExtraIncomeStep()}
-                        {currentStep === 'expenses' && renderExpensesStep()}
+                        {currentStep === 'expenses' && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                {renderExpensesStep()}
+                            </ScrollView>
+                        )}
                         {currentStep === 'expensesDays' && renderExpensesDaysStep()}
                         {currentStep === 'tour' && renderTourStep()}
                     </View>
 
                     {!isKeyboardVisible && (
                         <View style={styles.footer}>
-                            {currentStep !== 'theme' && (
-                                <TouchableOpacity style={[styles.skipButton, { borderColor: colors.border }]} onPress={handleSkip}>
+                            {currentStep !== 'theme' && currentStep !== 'tour' && (
+                                <TouchableOpacity style={[styles.skipButton]} onPress={handleSkip}>
                                     <Text style={[styles.skipText, { color: colors.textSecondary }]}>Atla</Text>
                                 </TouchableOpacity>
                             )}
 
-                            {currentStep !== 'theme' && (
-                                <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={handleBack}>
-                                    <Ionicons name="arrow-back" size={20} color={colors.text} />
+                            {currentStep !== 'theme' && currentStep !== 'tour' && (
+                                <TouchableOpacity
+                                    style={[styles.backButton, { borderColor: colors.border }]}
+                                    onPress={handleBack}
+                                >
+                                    <ArrowLeft size={18} color={colors.text} weight="regular" />
                                 </TouchableOpacity>
                             )}
 
@@ -661,9 +569,9 @@ export default function OnboardingScreen() {
                                 onPress={handleNext}
                             >
                                 <Text style={styles.nextText}>
-                                    {currentStep === 'tour' && tourIndex === TOUR_STEPS.length - 1 ? 'Başla' : 'Devam'}
+                                    {currentStep === 'tour' ? 'Başlayalım' : 'Devam'}
                                 </Text>
-                                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+                                <ArrowRight size={18} color="#FFFFFF" weight="regular" />
                             </TouchableOpacity>
                         </View>
                     )}
@@ -687,27 +595,35 @@ const styles = StyleSheet.create({
         paddingTop: 16,
     },
     stepDot: {
-        height: 8,
-        borderRadius: 4,
+        height: 6,
+        borderRadius: 3,
     },
     contentContainer: {
         flex: 1,
     },
     stepContent: {
         alignItems: 'center',
-        padding: 32,
+        padding: 28,
+    },
+    iconCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     stepTitle: {
-        fontSize: 24,
-        fontWeight: '600',
+        fontSize: 26,
+        fontFamily: 'DMSerifDisplay_400Regular',
         marginTop: 24,
         textAlign: 'center',
     },
     stepDescription: {
-        fontSize: 15,
+        fontSize: 14,
+        fontFamily: 'Outfit_400Regular',
         marginTop: 8,
         textAlign: 'center',
-        lineHeight: 22,
+        lineHeight: 21,
     },
     themeOptions: {
         flexDirection: 'row',
@@ -715,96 +631,51 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     themeOption: {
-        width: 100,
-        height: 100,
-        borderRadius: 16,
+        width: 120,
+        height: 120,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
+        position: 'relative',
     },
     themeText: {
         fontSize: 14,
-        fontWeight: '500',
+        fontFamily: 'Outfit_500Medium',
         marginTop: 8,
+    },
+    checkmark: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    checkmarkText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '700',
     },
     inputGroup: {
         width: '100%',
-        marginTop: 24,
+        marginTop: 20,
     },
     inputLabel: {
-        fontSize: 13,
-        fontWeight: '500',
+        fontSize: 12,
+        fontFamily: 'Outfit_500Medium',
         marginBottom: 8,
+        letterSpacing: 0.3,
     },
     input: {
         borderWidth: 1,
-        borderRadius: 12,
+        borderRadius: 14,
         paddingHorizontal: 16,
         paddingVertical: 14,
-        fontSize: 18,
+        fontSize: 20,
+        fontFamily: 'Outfit_500Medium',
         textAlign: 'center',
-    },
-    tourIconContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    tourDescription: {
-        fontSize: 16,
-        marginTop: 16,
-        textAlign: 'center',
-        lineHeight: 24,
-        paddingHorizontal: 20,
-    },
-    tourIndicator: {
-        flexDirection: 'row',
-        gap: 8,
-        marginTop: 40,
-    },
-    tourDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-    },
-    footer: {
-        flexDirection: 'row',
-        paddingHorizontal: 24,
-        paddingVertical: 16,
-        paddingBottom: 32,
-        gap: 12,
-    },
-    backButton: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        borderWidth: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    nextButton: {
-        flex: 1,
-        height: 50,
-        borderRadius: 14,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-    },
-    nextText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    skipButton: {
-        height: 50,
-        paddingHorizontal: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    skipText: {
-        fontSize: 14,
-        fontWeight: '500',
     },
     // Day picker styles
     dayPickerContainer: {
@@ -812,7 +683,7 @@ const styles = StyleSheet.create({
         marginTop: 24,
     },
     dayPickerScroll: {
-        paddingHorizontal: 8,
+        paddingHorizontal: 4,
         gap: 8,
     },
     dayButton: {
@@ -824,16 +695,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     dayButtonText: {
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: 14,
+        fontFamily: 'Outfit_600SemiBold',
     },
     daySection: {
         width: '100%',
         marginTop: 24,
     },
     daySectionTitle: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 15,
+        fontFamily: 'Outfit_600SemiBold',
         marginBottom: 12,
     },
     infoBox: {
@@ -841,13 +712,86 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 10,
         padding: 14,
-        borderRadius: 12,
+        borderRadius: 14,
         marginTop: 24,
         width: '100%',
     },
     infoText: {
         flex: 1,
         fontSize: 13,
+        fontFamily: 'Outfit_400Regular',
         lineHeight: 18,
+    },
+    // Tour feature grid
+    featureGrid: {
+        width: '100%',
+        marginTop: 24,
+        gap: 10,
+    },
+    featureCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 16,
+        gap: 14,
+    },
+    featureIcon: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    featureTitle: {
+        fontSize: 15,
+        fontFamily: 'Outfit_600SemiBold',
+        flex: 0,
+        minWidth: 80,
+    },
+    featureDesc: {
+        flex: 1,
+        fontSize: 12,
+        fontFamily: 'Outfit_400Regular',
+        lineHeight: 17,
+    },
+    // Footer
+    footer: {
+        flexDirection: 'row',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        paddingBottom: 32,
+        gap: 10,
+    },
+    backButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    nextButton: {
+        flex: 1,
+        height: 48,
+        borderRadius: 24,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
+    },
+    nextText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontFamily: 'Outfit_600SemiBold',
+    },
+    skipButton: {
+        height: 48,
+        paddingHorizontal: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    skipText: {
+        fontSize: 14,
+        fontFamily: 'Outfit_500Medium',
     },
 });

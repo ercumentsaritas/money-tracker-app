@@ -1,20 +1,20 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { House, ArrowsLeftRight, Calendar, Sparkle, Gear } from 'phosphor-react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 function TabBarIcon(props: {
-  name: React.ComponentProps<typeof Ionicons>['name'];
+  Icon: React.ComponentType<{ size: number; color: string; weight: 'thin' | 'light' | 'regular' | 'bold' | 'fill' }>;
   color: string;
   focused: boolean;
 }) {
   return (
     <View style={styles.iconWrapper}>
-      <Ionicons size={22} {...props} />
+      <props.Icon size={22} color={props.color} weight={props.focused ? 'regular' : 'light'} />
       {props.focused && <View style={[styles.indicator, { backgroundColor: props.color }]} />}
     </View>
   );
@@ -35,16 +35,20 @@ export default function TabLayout() {
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom + 8,
           paddingTop: 8,
-          backgroundColor: isDark ? colors.surface : '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+          backgroundColor: isDark ? colors.surface : colors.background,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border,
+          elevation: Platform.OS === 'android' ? 8 : 0,
+          shadowOpacity: 0,
         },
         tabBarItemStyle: {
           paddingVertical: 2,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
+          fontSize: 10,
+          fontFamily: 'Outfit_500Medium',
+          marginTop: 2,
+          letterSpacing: 0.2,
         },
         headerStyle: {
           backgroundColor: colors.background,
@@ -52,7 +56,7 @@ export default function TabLayout() {
           shadowOpacity: 0,
         },
         headerTitleStyle: {
-          fontWeight: '700',
+          fontFamily: 'Outfit_600SemiBold',
           fontSize: 18,
         },
         headerTintColor: colors.text,
@@ -63,35 +67,35 @@ export default function TabLayout() {
         options={{
           title: 'Ana Sayfa',
           headerShown: false,
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="home" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon Icon={House} color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
           title: 'İşlemler',
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="swap-horizontal" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon Icon={ArrowsLeftRight} color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Takvim',
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="calendar" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon Icon={Calendar} color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="ai-chat"
         options={{
           title: 'AI',
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="sparkles" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon Icon={Sparkle} color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Ayarlar',
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="cog" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon Icon={Gear} color={color} focused={focused} />,
         }}
       />
     </Tabs>
@@ -104,9 +108,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   indicator: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 3,
+    width: 16,
+    height: 2.5,
+    borderRadius: 1.5,
+    marginTop: 4,
   },
 });

@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { ArrowUp, ArrowDown, ArrowsClockwise } from 'phosphor-react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Transaction, Category } from '@/types';
@@ -33,29 +33,23 @@ export function TransactionItem({ transaction, category, onPress, onDelete }: Tr
     };
 
     const typeColor = isIncome ? colors.income : colors.expense;
-    const iconBgColor = isIncome
-        ? (isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.1)')
-        : (isDark ? 'rgba(251, 113, 133, 0.15)' : 'rgba(244, 63, 94, 0.1)');
+    const iconBgColor = isDark
+        ? (isIncome ? 'rgba(143, 174, 139, 0.12)' : 'rgba(212, 184, 150, 0.12)')
+        : (isIncome ? 'rgba(91, 111, 91, 0.08)' : 'rgba(184, 160, 138, 0.08)');
 
     return (
         <TouchableOpacity
-            style={[
-                styles.container,
-                {
-                    backgroundColor: colors.surface,
-                    borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                }
-            ]}
+            style={[styles.container, { borderBottomColor: colors.border }]}
             onPress={() => onPress?.(transaction)}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
         >
             {/* Category Icon */}
             <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
-                <Ionicons
-                    name={(category?.icon as any) || (isIncome ? 'arrow-up' : 'arrow-down')}
-                    size={20}
-                    color={typeColor}
-                />
+                {isIncome ? (
+                    <ArrowUp size={18} color={typeColor} weight="light" />
+                ) : (
+                    <ArrowDown size={18} color={typeColor} weight="light" />
+                )}
             </View>
 
             {/* Content */}
@@ -63,16 +57,9 @@ export function TransactionItem({ transaction, category, onPress, onDelete }: Tr
                 <Text style={[styles.description, { color: colors.text }]} numberOfLines={1}>
                     {transaction.description || category?.name || 'İşlem'}
                 </Text>
-                <View style={styles.metaRow}>
-                    <View style={[styles.categoryBadge, { backgroundColor: colors.surfaceAlt }]}>
-                        <Text style={[styles.categoryText, { color: colors.textSecondary }]}>
-                            {category?.name || 'Kategori'}
-                        </Text>
-                    </View>
-                    <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-                        {formatDate(transaction.date)}
-                    </Text>
-                </View>
+                <Text style={[styles.categoryText, { color: colors.textSecondary }]}>
+                    {category?.name || 'Kategori'} · {formatDate(transaction.date)}
+                </Text>
             </View>
 
             {/* Amount */}
@@ -81,9 +68,7 @@ export function TransactionItem({ transaction, category, onPress, onDelete }: Tr
                     {isIncome ? '+' : '-'}{formatAmount(transaction.amount)}
                 </Text>
                 {transaction.is_recurring && (
-                    <View style={[styles.recurringBadge, { backgroundColor: colors.tint + '15' }]}>
-                        <Ionicons name="sync" size={10} color={colors.tint} />
-                    </View>
+                    <ArrowsClockwise size={11} color={colors.textSecondary} weight="regular" />
                 )}
             </View>
         </TouchableOpacity>
@@ -94,21 +79,14 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        marginHorizontal: 16,
-        marginVertical: 6,
-        borderRadius: 20,
-        borderWidth: 1,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderBottomWidth: StyleSheet.hairlineWidth,
     },
     iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 16,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -117,42 +95,22 @@ const styles = StyleSheet.create({
         marginLeft: 14,
     },
     description: {
-        fontSize: 16,
-        fontWeight: '600',
-        letterSpacing: -0.3,
-    },
-    metaRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 6,
-        gap: 8,
-    },
-    categoryBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
+        fontSize: 15,
+        fontFamily: 'Outfit_500Medium',
+        letterSpacing: -0.2,
     },
     categoryText: {
-        fontSize: 11,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 0.3,
-    },
-    dateText: {
         fontSize: 12,
-        fontWeight: '500',
+        fontFamily: 'Outfit_400Regular',
+        marginTop: 3,
     },
     amountContainer: {
         alignItems: 'flex-end',
+        gap: 4,
     },
     amount: {
-        fontSize: 17,
-        fontWeight: '700',
+        fontSize: 15,
+        fontFamily: 'Outfit_600SemiBold',
         letterSpacing: -0.3,
-    },
-    recurringBadge: {
-        marginTop: 4,
-        padding: 4,
-        borderRadius: 6,
     },
 });

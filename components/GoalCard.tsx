@@ -8,9 +8,12 @@ import {
     TextInput,
     Alert,
     Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Flag, Clock, Wallet, Calendar, ArrowsClockwise, Plus, PlusCircle } from 'phosphor-react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Goal } from '@/types';
@@ -81,12 +84,12 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
         }
     };
 
-    // Calculate color based on progress
+    // Calculate color based on progress - using sage green palette
     const getProgressColor = (): readonly [string, string] => {
-        if (progress >= 75) return ['#10B981', '#34D399'] as const;
-        if (progress >= 50) return ['#6366F1', '#818CF8'] as const;
-        if (progress >= 25) return ['#F59E0B', '#FBBF24'] as const;
-        return ['#8B5CF6', '#A78BFA'] as const;
+        if (progress >= 75) return ['#4A7C59', '#6B9B6B'] as const; // Deep sage
+        if (progress >= 50) return ['#5D7A5D', '#7A9A7A'] as const; // Sage green
+        if (progress >= 25) return ['#C4A484', '#D4B896'] as const; // Warm taupe
+        return ['#7A9A7A', '#8FAE8B'] as const; // Light sage
     };
 
     return (
@@ -106,12 +109,12 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
                         end={{ x: 1, y: 1 }}
                         style={styles.iconContainer}
                     >
-                        <Ionicons name="flag" size={20} color="#FFFFFF" />
+                        <Flag size={20} color="#FFFFFF" weight="regular" />
                     </LinearGradient>
                     <View style={styles.titleContainer}>
                         <Text style={[styles.title, { color: colors.text }]}>{goal.name}</Text>
                         <View style={styles.deadlineRow}>
-                            <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
+                            <Clock size={12} color={colors.textSecondary} weight="regular" />
                             <Text style={[styles.deadline, { color: colors.textSecondary }]}>
                                 {formatDate(goal.deadline)}
                             </Text>
@@ -122,12 +125,12 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
                         onPress={() => setShowDepositModal(true)}
                     >
                         <LinearGradient
-                            colors={isDark ? ['#818CF8', '#6366F1'] : ['#6366F1', '#4F46E5']}
+                            colors={isDark ? ['#8FAE8B', '#5D7A5D'] : ['#5D7A5D', '#4A6B4A']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.depositButtonGradient}
                         >
-                            <Ionicons name="add" size={18} color="#FFFFFF" />
+                            <Plus size={18} color="#FFFFFF" weight="regular" />
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
@@ -155,21 +158,21 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
                 {/* Stats */}
                 <View style={styles.statsRow}>
                     <View style={[styles.statCard, { backgroundColor: colors.surfaceAlt }]}>
-                        <Ionicons name="wallet-outline" size={16} color={colors.income} />
+                        <Wallet size={16} color={colors.income} weight="regular" />
                         <Text style={[styles.statValue, { color: colors.text }]}>
                             {formatAmount(remaining)}
                         </Text>
                         <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Kalan</Text>
                     </View>
                     <View style={[styles.statCard, { backgroundColor: colors.surfaceAlt }]}>
-                        <Ionicons name="calendar-outline" size={16} color={colors.tint} />
+                        <Calendar size={16} color={colors.tint} weight="regular" />
                         <Text style={[styles.statValue, { color: colors.text }]}>
                             {currentInstallment}/{totalMonths}
                         </Text>
                         <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Ay</Text>
                     </View>
                     <View style={[styles.statCard, { backgroundColor: colors.surfaceAlt }]}>
-                        <Ionicons name="repeat-outline" size={16} color={colors.warning} />
+                        <ArrowsClockwise size={16} color={colors.warning} weight="regular" />
                         <Text style={[styles.statValue, { color: colors.text }]}>
                             {formatAmount(goal.monthly_target)}
                         </Text>
@@ -179,71 +182,77 @@ export function GoalCard({ goal, onDeposit }: GoalCardProps) {
             </View>
 
             {/* Deposit Modal */}
-            <Modal visible={showDepositModal} transparent animationType="fade">
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => {
-                        Keyboard.dismiss();
-                        setShowDepositModal(false);
-                    }}
+            <Modal visible={showDepositModal} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setShowDepositModal(false)}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0)}
+                    style={{ flex: 1 }}
                 >
-                    <View
-                        style={[styles.modalContent, { backgroundColor: colors.surface }]}
-                        onStartShouldSetResponder={() => true}
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => {
+                            Keyboard.dismiss();
+                            setShowDepositModal(false);
+                        }}
                     >
-                        <View style={styles.modalHeader}>
-                            <LinearGradient
-                                colors={['#6366F1', '#8B5CF6']}
-                                style={styles.modalIcon}
-                            >
-                                <Ionicons name="add-circle" size={24} color="#FFFFFF" />
-                            </LinearGradient>
-                        </View>
-                        <Text style={[styles.modalTitle, { color: colors.text }]}>Para Yatır</Text>
-                        <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                            "{goal.name}" hedefine
-                        </Text>
-                        <TextInput
-                            style={[
-                                styles.input,
-                                {
-                                    backgroundColor: colors.surfaceAlt,
-                                    color: colors.text,
-                                    borderColor: colors.border,
-                                }
-                            ]}
-                            placeholder="₺0"
-                            placeholderTextColor={colors.textSecondary}
-                            value={depositAmount}
-                            onChangeText={setDepositAmount}
-                            keyboardType="numeric"
-                            autoFocus
-                        />
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                style={[styles.modalButton, { backgroundColor: colors.surfaceAlt }]}
-                                onPress={() => setShowDepositModal(false)}
-                            >
-                                <Text style={[styles.modalButtonText, { color: colors.text }]}>İptal</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.modalButtonPrimary}
-                                onPress={handleDeposit}
-                            >
+                        <View
+                            style={[styles.modalContent, { backgroundColor: colors.surface }]}
+                            onStartShouldSetResponder={() => true}
+                        >
+                            <View style={styles.modalHeader}>
                                 <LinearGradient
-                                    colors={['#6366F1', '#4F46E5']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={styles.modalButtonGradient}
+                                    colors={['#5D7A5D', '#7A9A7A']}
+                                    style={styles.modalIcon}
                                 >
-                                    <Ionicons name="add" size={18} color="#FFFFFF" />
-                                    <Text style={styles.modalButtonTextWhite}>Yatır</Text>
+                                    <PlusCircle size={24} color="#FFFFFF" weight="regular" />
                                 </LinearGradient>
-                            </TouchableOpacity>
+                            </View>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>Para Yatır</Text>
+                            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+                                "{goal.name}" hedefine
+                            </Text>
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: colors.surfaceAlt,
+                                        color: colors.text,
+                                        borderColor: colors.border,
+                                    }
+                                ]}
+                                placeholder="₺0"
+                                placeholderTextColor={colors.textSecondary}
+                                value={depositAmount}
+                                onChangeText={setDepositAmount}
+                                keyboardType="numeric"
+                                autoFocus
+                            />
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, { backgroundColor: colors.surfaceAlt }]}
+                                    onPress={() => setShowDepositModal(false)}
+                                >
+                                    <Text style={[styles.modalButtonText, { color: colors.text }]}>İptal</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.modalButtonPrimary}
+                                    onPress={handleDeposit}
+                                >
+                                    <LinearGradient
+                                        colors={['#5D7A5D', '#4A6B4A']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={styles.modalButtonGradient}
+                                    >
+                                        <Plus size={18} color="#FFFFFF" weight="regular" />
+                                        <Text style={styles.modalButtonTextWhite}>Yatır</Text>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                </KeyboardAvoidingView>
             </Modal>
         </>
     );
@@ -360,7 +369,8 @@ const styles = StyleSheet.create({
     modalContent: {
         borderRadius: 28,
         padding: 28,
-        width: 320,
+        width: '85%',
+        maxWidth: 340,
         alignItems: 'center',
     },
     modalHeader: {

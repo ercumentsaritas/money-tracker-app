@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Money, TrendUp, CreditCard, Wallet, CaretRight } from 'phosphor-react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Account } from '@/types';
@@ -25,61 +24,43 @@ export function AccountCard({ account, onPress }: AccountCardProps) {
         }).format(amount);
     };
 
-    const getIcon = (): { name: keyof typeof Ionicons.glyphMap; gradient: [string, string] } => {
+    const getIcon = () => {
         const name = account.name.toLowerCase();
-        if (name.includes('nakit')) return { name: 'cash', gradient: ['#10B981', '#34D399'] };
-        if (name.includes('yatırım')) return { name: 'trending-up', gradient: ['#8B5CF6', '#A78BFA'] };
-        if (name.includes('kredi')) return { name: 'card', gradient: ['#F59E0B', '#FBBF24'] };
-        return { name: 'wallet', gradient: ['#6366F1', '#818CF8'] };
+        if (name.includes('nakit')) return Money;
+        if (name.includes('yatırım')) return TrendUp;
+        if (name.includes('kredi')) return CreditCard;
+        return Wallet;
     };
 
-    const { name: iconName, gradient } = getIcon();
+    const Icon = getIcon();
     const isPositive = account.balance >= 0;
 
     return (
         <TouchableOpacity
-            style={[
-                styles.container,
-                {
-                    backgroundColor: colors.surface,
-                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                }
-            ]}
+            style={[styles.container, { borderBottomColor: colors.border }]}
             onPress={onPress}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
         >
-            {/* Icon with gradient */}
-            <LinearGradient
-                colors={gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.iconContainer}
-            >
-                <Ionicons name={iconName} size={22} color="#FFFFFF" />
-            </LinearGradient>
+            {/* Icon */}
+            <View style={[styles.iconContainer, {
+                backgroundColor: isDark ? 'rgba(143, 174, 139, 0.12)' : 'rgba(91, 111, 91, 0.08)'
+            }]}>
+                <Icon size={20} color={colors.tint} weight="light" />
+            </View>
 
             {/* Content */}
             <View style={styles.content}>
                 <Text style={[styles.name, { color: colors.text }]}>{account.name}</Text>
-                <View style={styles.balanceRow}>
-                    <Text style={[
-                        styles.balance,
-                        { color: isPositive ? colors.income : colors.expense }
-                    ]}>
-                        {formatAmount(account.balance)}
-                    </Text>
-                    {!isPositive && (
-                        <View style={[styles.negativeBadge, { backgroundColor: colors.expense + '15' }]}>
-                            <Text style={[styles.negativeText, { color: colors.expense }]}>Negatif</Text>
-                        </View>
-                    )}
-                </View>
+                <Text style={[
+                    styles.balance,
+                    { color: isPositive ? colors.income : colors.expense }
+                ]}>
+                    {formatAmount(account.balance)}
+                </Text>
             </View>
 
             {/* Arrow */}
-            <View style={[styles.arrowContainer, { backgroundColor: colors.surfaceAlt }]}>
-                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-            </View>
+            <CaretRight size={16} color={colors.textSecondary} weight="light" />
         </TouchableOpacity>
     );
 }
@@ -88,19 +69,14 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        borderRadius: 20,
-        borderWidth: 1,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderBottomWidth: StyleSheet.hairlineWidth,
     },
     iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 16,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -110,34 +86,13 @@ const styles = StyleSheet.create({
     },
     name: {
         fontSize: 15,
-        fontWeight: '600',
+        fontFamily: 'Outfit_500Medium',
         letterSpacing: -0.2,
     },
-    balanceRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 4,
-        gap: 8,
-    },
     balance: {
-        fontSize: 17,
-        fontWeight: '700',
+        fontSize: 16,
+        fontFamily: 'Outfit_600SemiBold',
         letterSpacing: -0.3,
-    },
-    negativeBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 6,
-    },
-    negativeText: {
-        fontSize: 10,
-        fontWeight: '600',
-    },
-    arrowContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
+        marginTop: 2,
     },
 });

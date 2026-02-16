@@ -137,7 +137,7 @@ export default function AccountsScreen() {
             />
 
             {/* Add Modal */}
-            <Modal visible={showAddModal} transparent animationType="fade">
+            <Modal visible={showAddModal} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setShowAddModal(false)}>
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
@@ -246,7 +246,8 @@ const styles = StyleSheet.create({
     modalContent: {
         borderRadius: 20,
         padding: 24,
-        width: 300,
+        width: '85%',
+        maxWidth: 340,
     },
     modalTitle: {
         fontSize: 18,

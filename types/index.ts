@@ -13,6 +13,8 @@ export interface Transaction {
   is_recurring: boolean;
   recurring_id: string | null;
   calendar_event_id: string | null;
+  notification_id?: string | null;
+  reminder_enabled?: boolean;
   synced: boolean;
   created_at: string;
 }
@@ -55,6 +57,8 @@ export interface TransactionInput {
   date: string;
   is_recurring?: boolean;
   recurring_id?: string | null;
+  notification_id?: string | null;
+  reminder_enabled?: boolean;
 }
 
 export interface RecurringTransaction {
@@ -68,6 +72,8 @@ export interface RecurringTransaction {
   day_of_month?: number; // 1-31, only for monthly/yearly frequency
   next_date: string;
   is_active: boolean;
+  notification_id?: string | null;
+  reminder_enabled?: boolean;
   created_at: string;
 }
 
@@ -80,6 +86,8 @@ export interface RecurringTransactionInput {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   day_of_month?: number; // 1-31, only for monthly/yearly frequency
   next_date: string;
+  notification_id?: string | null;
+  reminder_enabled?: boolean;
 }
 
 export interface Goal {

@@ -5,13 +5,18 @@ import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTheme } from '@/context/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
+import {
+    Sun, Moon, LockSimple, Fingerprint, Scan,
+    Wallet, Tag, ArrowsClockwise, CalendarDots,
+    CloudArrowUp, DownloadSimple, Trash, Flask,
+    CaretRight, DeviceMobile
+} from 'phosphor-react-native';
 import { resetDatabase } from '@/database';
 import { PinSetupModal } from '@/components/PinSetupModal';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 interface SettingItemProps {
-    icon: keyof typeof Ionicons.glyphMap;
+    icon: React.ComponentType<any>;
     title: string;
     subtitle?: string;
     onPress?: () => void;
@@ -19,18 +24,21 @@ interface SettingItemProps {
     rightElement?: React.ReactNode;
 }
 
-function SettingItem({ icon, title, subtitle, onPress, danger, rightElement }: SettingItemProps) {
+function SettingItem({ icon: Icon, title, subtitle, onPress, danger, rightElement }: SettingItemProps) {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
 
     return (
         <TouchableOpacity
-            style={[styles.settingItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            style={styles.settingItem}
             onPress={onPress}
             disabled={!onPress && !rightElement}
+            activeOpacity={0.6}
         >
-            <View style={[styles.iconContainer, { backgroundColor: danger ? colors.expense + '20' : colors.tint + '20' }]}>
-                <Ionicons name={icon} size={22} color={danger ? colors.expense : colors.tint} />
+            <View style={[styles.iconContainer, {
+                backgroundColor: danger ? colors.expense + '12' : colors.tint + '10'
+            }]}>
+                <Icon size={20} color={danger ? colors.expense : colors.tint} weight="light" />
             </View>
             <View style={styles.settingContent}>
                 <Text style={[styles.settingTitle, { color: danger ? colors.expense : colors.text }]}>
@@ -42,7 +50,9 @@ function SettingItem({ icon, title, subtitle, onPress, danger, rightElement }: S
                     </Text>
                 )}
             </View>
-            {rightElement ? rightElement : <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />}
+            {rightElement ? rightElement : (
+                <CaretRight size={16} color={colors.textSecondary} weight="light" />
+            )}
         </TouchableOpacity>
     );
 }
@@ -101,17 +111,9 @@ export default function SettingsScreen() {
                     onPress: async () => {
                         try {
                             setIsResetting(true);
-
-                            // 1. Reset database
                             await resetDatabase();
-
-                            // 2. Reset onboarding state
                             await resetOnboarding();
-
-                            // 3. Reset security settings
                             await removePin();
-
-                            // Brief delay to show the "waiting" screen as requested
                             setTimeout(() => {
                                 setIsResetting(false);
                                 router.replace('/onboarding');
@@ -127,7 +129,6 @@ export default function SettingsScreen() {
     };
 
     const handleThemeChange = () => {
-        // Cycle through themes: light -> dark -> system -> light
         const themeOrder = ['light', 'dark', 'system'] as const;
         const currentIndex = themeOrder.indexOf(theme);
         const nextIndex = (currentIndex + 1) % themeOrder.length;
@@ -143,9 +144,12 @@ export default function SettingsScreen() {
         }
     };
 
+    const getThemeIcon = () => {
+        return theme === 'dark' ? Moon : Sun;
+    };
+
     const handlePinToggle = () => {
         if (isPinEnabled) {
-            // Ask to remove PIN
             Alert.alert(
                 'PIN Kodunu Kaldır',
                 'PIN kodunu kaldırmak istediğinizden emin misiniz?',
@@ -161,7 +165,6 @@ export default function SettingsScreen() {
                 ]
             );
         } else {
-            // Show PIN setup modal
             setShowPinSetup(true);
         }
     };
@@ -193,19 +196,23 @@ export default function SettingsScreen() {
     };
 
     const getBiometricLabel = () => {
-        if (biometricType === 'face') {
-            return 'Face ID';
-        }
-        return 'Touch ID';
+        return biometricType === 'face' ? 'Face ID' : 'Touch ID';
+    };
+
+    const getBiometricIcon = () => {
+        return biometricType === 'face' ? Scan : Fingerprint;
     };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <ScrollView style={styles.scrollView}>
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                {/* Page Title */}
+                <Text style={[styles.pageTitle, { color: colors.text }]}>Ayarlar</Text>
+
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>GÖRÜNÜM</Text>
 
                 <SettingItem
-                    icon={theme === 'dark' ? 'moon' : 'sunny-outline'}
+                    icon={getThemeIcon()}
                     title="Tema"
                     subtitle={getThemeLabel()}
                     onPress={handleThemeChange}
@@ -214,37 +221,33 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>GÜVENLİK</Text>
 
                 <SettingItem
-                    icon="lock-closed-outline"
+                    icon={LockSimple}
                     title="PIN Kodu"
                     subtitle={isPinEnabled ? 'Aktif' : 'Kapalı'}
                     onPress={handlePinToggle}
                     rightElement={
-                        <View style={styles.switchContainer}>
-                            <Switch
-                                value={isPinEnabled}
-                                onValueChange={handlePinToggle}
-                                trackColor={{ false: colors.border, true: colors.tint + '50' }}
-                                thumbColor={isPinEnabled ? colors.tint : colors.textSecondary}
-                            />
-                        </View>
+                        <Switch
+                            value={isPinEnabled}
+                            onValueChange={handlePinToggle}
+                            trackColor={{ false: colors.border, true: colors.tint + '50' }}
+                            thumbColor={isPinEnabled ? colors.tint : colors.textSecondary}
+                        />
                     }
                 />
 
                 {biometricAvailable && (
                     <SettingItem
-                        icon={biometricType === 'face' ? 'scan-outline' : 'finger-print-outline'}
+                        icon={getBiometricIcon()}
                         title={getBiometricLabel()}
                         subtitle={isBiometricEnabled ? 'Aktif' : 'Kapalı'}
                         rightElement={
-                            <View style={styles.switchContainer}>
-                                <Switch
-                                    value={isBiometricEnabled}
-                                    onValueChange={handleBiometricToggle}
-                                    trackColor={{ false: colors.border, true: colors.tint + '50' }}
-                                    thumbColor={isBiometricEnabled ? colors.tint : colors.textSecondary}
-                                    disabled={!isPinEnabled}
-                                />
-                            </View>
+                            <Switch
+                                value={isBiometricEnabled}
+                                onValueChange={handleBiometricToggle}
+                                trackColor={{ false: colors.border, true: colors.tint + '50' }}
+                                thumbColor={isBiometricEnabled ? colors.tint : colors.textSecondary}
+                                disabled={!isPinEnabled}
+                            />
                         }
                     />
                 )}
@@ -252,19 +255,19 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>GENEL</Text>
 
                 <SettingItem
-                    icon="wallet-outline"
+                    icon={Wallet}
                     title="Hesaplar"
                     subtitle="Nakit, banka hesapları"
                     onPress={() => router.push('/accounts')}
                 />
                 <SettingItem
-                    icon="pricetags-outline"
+                    icon={Tag}
                     title="Kategoriler"
                     subtitle="Gelir ve gider kategorileri"
                     onPress={() => router.push('/categories')}
                 />
                 <SettingItem
-                    icon="repeat-outline"
+                    icon={ArrowsClockwise}
                     title="Tekrarlayan İşlemler"
                     subtitle="Maaş, faturalar, abonelikler"
                     onPress={() => router.push('/recurring')}
@@ -273,13 +276,13 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ENTEGRASYONLAR</Text>
 
                 <SettingItem
-                    icon="calendar-outline"
+                    icon={CalendarDots}
                     title="Google Takvim"
                     subtitle="Ödeme hatırlatıcıları"
                     onPress={() => Alert.alert('Yakında', 'Bu özellik yakında eklenecek.')}
                 />
                 <SettingItem
-                    icon="cloud-outline"
+                    icon={CloudArrowUp}
                     title="Bulut Senkronizasyonu"
                     subtitle="Verilerinizi yedekleyin"
                     onPress={() => Alert.alert('Yakında', 'Bu özellik yakında eklenecek.')}
@@ -288,13 +291,13 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>VERİ</Text>
 
                 <SettingItem
-                    icon="download-outline"
+                    icon={DownloadSimple}
                     title="Dışa Aktar"
                     subtitle="CSV veya PDF olarak"
                     onPress={() => Alert.alert('Yakında', 'Bu özellik yakında eklenecek.')}
                 />
                 <SettingItem
-                    icon="trash-outline"
+                    icon={Trash}
                     title="Veritabanını Sıfırla"
                     subtitle="Tüm verileri sil"
                     onPress={handleResetDatabase}
@@ -304,7 +307,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>GELİŞTİRİCİ</Text>
 
                 <SettingItem
-                    icon="flask-outline"
+                    icon={Flask}
                     title="Test Alanı"
                     subtitle="Tüm fonksiyonları test et"
                     onPress={() => router.push('/dev')}
@@ -324,7 +327,7 @@ export default function SettingsScreen() {
             />
 
             {/* Resetting Loading Overlay */}
-            <Modal transparent visible={isResetting} animationType="fade">
+            <Modal transparent visible={isResetting} animationType="fade" statusBarTranslucent>
                 <View style={styles.loadingOverlay}>
                     <View style={[styles.loadingContent, { backgroundColor: colors.surface }]}>
                         <ActivityIndicator size="large" color={colors.tint} />
@@ -344,51 +347,54 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
     },
+    pageTitle: {
+        fontSize: 28,
+        fontFamily: 'DMSerifDisplay_400Regular',
+        marginHorizontal: 20,
+        marginTop: 16,
+        marginBottom: 8,
+    },
     sectionTitle: {
-        fontSize: 12,
-        fontWeight: '600',
+        fontSize: 11,
+        fontFamily: 'Outfit_600SemiBold',
         marginHorizontal: 20,
         marginTop: 24,
         marginBottom: 8,
-        letterSpacing: 0.5,
+        letterSpacing: 1.5,
     },
     settingItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 14,
-        marginHorizontal: 16,
-        marginVertical: 3,
-        borderRadius: 14,
-        borderWidth: 1,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
     },
     iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
+        width: 38,
+        height: 38,
+        borderRadius: 19,
         justifyContent: 'center',
         alignItems: 'center',
     },
     settingContent: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: 14,
     },
     settingTitle: {
         fontSize: 15,
-        fontWeight: '500',
+        fontFamily: 'Outfit_500Medium',
     },
     settingSubtitle: {
         fontSize: 12,
-        marginTop: 3,
-    },
-    switchContainer: {
-        marginLeft: 8,
+        fontFamily: 'Outfit_400Regular',
+        marginTop: 2,
     },
     footer: {
         alignItems: 'center',
         paddingVertical: 32,
     },
     version: {
-        fontSize: 13,
+        fontSize: 12,
+        fontFamily: 'Outfit_400Regular',
     },
     loadingOverlay: {
         flex: 1,
@@ -397,25 +403,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     loadingContent: {
-        padding: 30,
+        padding: 28,
         borderRadius: 20,
         alignItems: 'center',
         width: '80%',
         maxWidth: 300,
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
     },
     loadingText: {
         marginTop: 20,
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'Outfit_600SemiBold',
     },
     loadingSubtext: {
         marginTop: 8,
         fontSize: 13,
+        fontFamily: 'Outfit_400Regular',
         textAlign: 'center',
     },
 });

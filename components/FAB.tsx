@@ -1,27 +1,26 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Plus } from 'phosphor-react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FABProps {
     onPress: () => void;
-    icon?: keyof typeof Ionicons.glyphMap;
 }
 
-export function FAB({ onPress, icon = 'add' }: FABProps) {
+export function FAB({ onPress }: FABProps) {
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
     const insets = useSafeAreaInsets();
 
     // Position above tab bar
-    const bottomOffset = 16 + 60 + Math.max(0, insets.bottom);
+    const bottomOffset = 16 + 65 + Math.max(0, insets.bottom);
 
     return (
         <TouchableOpacity
             onPress={onPress}
-            activeOpacity={0.85}
+            activeOpacity={0.8}
             style={[
                 styles.fab,
                 {
@@ -30,7 +29,7 @@ export function FAB({ onPress, icon = 'add' }: FABProps) {
                 }
             ]}
         >
-            <Ionicons name={icon} size={24} color="#FFFFFF" />
+            <Plus size={24} color="#FFFFFF" weight="light" />
         </TouchableOpacity>
     );
 }
@@ -39,16 +38,16 @@ const styles = StyleSheet.create({
     fab: {
         position: 'absolute',
         right: 20,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 54,
+        height: 54,
+        borderRadius: 27,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 6,
-        shadowColor: '#000',
+        elevation: 3,
+        shadowColor: '#5B6F5B',
         shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
         zIndex: 100,
     },
 });

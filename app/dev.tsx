@@ -16,7 +16,9 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useTheme } from '@/context/ThemeContext';
 import { resetDatabase } from '@/database';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 
 interface TestButtonProps {
     icon: keyof typeof Ionicons.glyphMap;
@@ -135,6 +137,22 @@ export default function DevScreen() {
         setTheme(theme);
     };
 
+    const handleTestNotification = async () => {
+        // Schedule a notification for 5 seconds from now
+        await Notifications.scheduleNotificationAsync({
+            content: {
+                title: 'Test Bildirimi 🔔',
+                body: 'Bu bir test bildirimidir. Sistem çalışıyor!',
+            },
+            trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                seconds: 5,
+                repeats: false,
+            },
+        });
+        Alert.alert('Başarılı', '5 saniye sonrası için test bildirimi planlandı. Uygulamayı arka plana atın.');
+    };
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Header */}
@@ -214,7 +232,15 @@ export default function DevScreen() {
                     icon="sparkles"
                     title="AI Asistan"
                     description="Chat ekranını test et"
+
                     onPress={handleTestAIChat}
+                />
+
+                <TestButton
+                    icon="notifications"
+                    title="Bildirim Testi (5sn)"
+                    description="5 saniye sonra bildirim gönder"
+                    onPress={handleTestNotification}
                 />
 
                 <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>TEMA TESTLERİ</Text>
@@ -245,7 +271,7 @@ export default function DevScreen() {
             </ScrollView>
 
             {/* Resetting Loading Overlay */}
-            <Modal transparent visible={isResetting} animationType="fade">
+            <Modal transparent visible={isResetting} animationType="fade" statusBarTranslucent>
                 <View style={styles.loadingOverlay}>
                     <View style={[styles.loadingContent, { backgroundColor: colors.surface }]}>
                         <ActivityIndicator size="large" color={colors.tint} />

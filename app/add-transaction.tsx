@@ -12,6 +12,8 @@ import {
     Modal,
     TouchableWithoutFeedback,
     Keyboard,
+    Switch,
+    StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -38,6 +40,16 @@ export default function AddTransactionScreen() {
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [reminderEnabled, setReminderEnabled] = useState(false);
+
+    // Check if selected date is in the future
+    const isFutureDate = () => {
+        const d = new Date(date);
+        const now = new Date();
+        d.setHours(0, 0, 0, 0);
+        now.setHours(0, 0, 0, 0);
+        return d > now;
+    };
 
     useEffect(() => {
         loadData();
@@ -74,7 +86,9 @@ export default function AddTransactionScreen() {
                 category_id: selectedCategory.id,
                 account_id: selectedAccount.id,
                 description: description.trim(),
+
                 date: date,
+                reminder_enabled: reminderEnabled && isFutureDate(),
             });
             router.back();
         } catch (error) {
@@ -90,7 +104,8 @@ export default function AddTransactionScreen() {
             <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                 <KeyboardAvoidingView
                     style={styles.keyboardView}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : (StatusBar.currentHeight || 0)}
                 >
                     <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         <TouchableOpacity onPress={() => router.back()}>
@@ -144,6 +159,7 @@ export default function AddTransactionScreen() {
                                 <Text style={[styles.typeText, { color: type === 'income' ? '#FFF' : colors.text }]}>
                                     Gelir
                                 </Text>
+
                             </TouchableOpacity>
                         </View>
 
@@ -192,6 +208,31 @@ export default function AddTransactionScreen() {
                                 </Text>
                             </TouchableOpacity>
                         </View>
+
+                        {/* Reminder Switch - Only show for future dates */}
+                        {isFutureDate() && (
+                            <View style={[styles.inputCard, {
+                                backgroundColor: colors.surface,
+                                borderColor: colors.border,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                paddingVertical: 12
+                            }]}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                    <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
+                                    <Text style={[styles.inputLabel, { color: colors.textSecondary, marginBottom: 0 }]}>
+                                        Hatırlatıcı (1 Gün Önce)
+                                    </Text>
+                                </View>
+                                <Switch
+                                    value={reminderEnabled}
+                                    onValueChange={setReminderEnabled}
+                                    trackColor={{ false: colors.border, true: colors.tint }}
+                                    thumbColor={'#fff'}
+                                />
+                            </View>
+                        )}
 
                         {/* Calendar Picker */}
                         <CalendarPicker
@@ -286,7 +327,7 @@ export default function AddTransactionScreen() {
                     />
                 </KeyboardAvoidingView>
             </TouchableWithoutFeedback>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 

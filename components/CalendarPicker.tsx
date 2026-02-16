@@ -5,6 +5,7 @@ import {
     Text,
     TouchableOpacity,
     Modal,
+    Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -106,7 +107,7 @@ export function CalendarPicker({ visible, selectedDate, onDateSelect, onClose }:
     const days = generateCalendarDays();
 
     return (
-        <Modal visible={visible} transparent animationType="fade">
+        <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
             <TouchableOpacity
                 style={styles.overlay}
                 activeOpacity={1}
@@ -197,7 +198,8 @@ const styles = StyleSheet.create({
     container: {
         borderRadius: 20,
         padding: 16,
-        width: 320,
+        width: '90%',
+        maxWidth: 360,
     },
     header: {
         flexDirection: 'row',
@@ -219,12 +221,14 @@ const styles = StyleSheet.create({
     daysGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
+        justifyContent: 'space-between',
     },
     dayCell: {
-        width: '14.28%',
+        width: '13%', // Slightly less than 14.28% to avoid wrapping issues
         aspectRatio: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: 4,
     },
     dayName: {
         fontSize: 12,
